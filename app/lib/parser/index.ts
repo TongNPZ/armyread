@@ -1,19 +1,21 @@
-// app/lib/parser/index.ts
 import { walkSelections } from "./walkSelections"
-import { parseUnitBasic } from "./parseUnit"
-import type { Unit } from "./types"
+import { parseUnitEntry } from "./parseUnitEntry"
+import type { UnitEntry } from "./types"
 
-export function parseUnits(
+export function parseUnitEntries(
     selections: any[]
-): Record<string, Unit> {
-    const units: Record<string, Unit> = {}
+): Record<string, UnitEntry> {
+    const entries: Record<string, UnitEntry> = {}
 
-    walkSelections(selections, (node) => {
-        const unit = parseUnitBasic(node)
-        if (unit) {
-            units[unit.id] = unit
+    walkSelections(selections, (node, depth) => {
+        // ❌ ไม่สร้าง UnitEntry จาก model ที่เป็น child
+        if (node.type === "model" && depth > 0) return
+
+        const entry = parseUnitEntry(node)
+        if (entry) {
+            entries[entry.id] = entry
         }
     })
 
-    return units
+    return entries
 }

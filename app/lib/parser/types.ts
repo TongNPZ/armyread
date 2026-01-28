@@ -13,6 +13,17 @@ export type Army = {
 
     units: Record<string, Unit>
 }
+export type ProfileCharacteristic = {
+    name: string
+    value: string
+}
+
+export type Profile = {
+    id?: string
+    name?: string
+    typeName?: string
+    characteristics?: ProfileCharacteristic[]
+}
 
 export type SelectionNode = {
     id?: string
@@ -23,6 +34,7 @@ export type SelectionNode = {
     categories?: { name?: string }[]
     costs?: { name?: string; value?: number }[]
 
+    profiles?: Profile[]
     selections?: SelectionNode[]
 }
 
@@ -85,3 +97,61 @@ export type Weapon = {
 
     keywords: string[]
 }
+
+export type ModelEntry = {
+    id: string
+    name: string
+    count: number
+}
+
+export type UnitEntry = {
+    id: string
+    name: string
+
+    points?: number
+
+    models: ModelEntry[]
+    totalModels: number
+
+    /**
+     * raw reference (for leader attach / stratagem later)
+     */
+    rawNode?: SelectionNode
+}
+
+export type NewRecruitRoster = {
+    roster?: {
+        forces?: {
+            selections?: SelectionNode[]
+        }[]
+    }
+}
+
+function hasModelChildren(node: SelectionNode): boolean {
+    return !!node.selections?.some(s => s.type === "model")
+}
+
+type ArmyListUnit = {
+    name: string
+    points: number
+
+    role?: "CHARACTER" | "BATTLELINE" | "VEHICLE" | string
+
+    models: {
+        name: string
+        count: number
+
+        weapons: {
+            name: string
+            count: number
+        }[]
+
+        extras?: {
+            name: string
+            points?: number
+        }[]
+    }[]
+
+    keywords?: string[] // เช่น Warlord
+}
+
