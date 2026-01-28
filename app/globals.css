@@ -1,0 +1,138 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap");
+@import "tailwindcss";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================
+   THEME VARIABLES (Dark First)
+   ========================= */
+:root {
+  --background: #0b0f14;
+  --foreground: #e5e7eb;
+  --panel: #121823;
+  --border: #1f2937;
+  --muted: #9ca3af;
+  --accent: #dc2626;
+}
+
+/* Tailwind v4 theme bridge */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Roboto Condensed", Arial, sans-serif;
+}
+
+/* =========================
+   BASE
+   ========================= */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Roboto Condensed", Arial, sans-serif;
+  line-height: 1.25;
+}
+
+/* =========================
+   ROSTER / UNIT
+   ========================= */
+.unit {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: 10px;
+  margin-top: -1px;
+}
+
+.name {
+  font-weight: 700;
+}
+
+.cost,
+.stat {
+  background-color: rgba(255, 255, 255, 0.08);
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 0.85em;
+}
+
+.indent {
+  margin-left: 20px;
+  color: var(--muted);
+}
+
+/* =========================
+   SECTION
+   ========================= */
+.section-title {
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  margin-top: 6px;
+  margin-bottom: 4px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* =========================
+   WEAPONS / TABLE
+   ========================= */
+.weapon-line {
+  font-size: 12px;
+  margin-left: 8px;
+  color: var(--muted);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  font-size: 12px;
+}
+
+th,
+td {
+  border: 1px solid var(--border);
+  padding: 4px 6px;
+  text-align: left;
+}
+
+th {
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 700;
+}
+
+/* =========================
+   WAHAPEDIA MODE
+   ========================= */
+.wahapedia {
+  font-family: "Roboto Condensed", Arial, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+/* =========================
+   PRINT MODE
+   ========================= */
+@media print {
+  :root {
+    --background: #ffffff;
+    --foreground: #000000;
+    --panel: #ffffff;
+    --border: #000000;
+    --muted: #000000;
+    --accent: #000000;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+
+  section {
+    page-break-inside: avoid;
+  }
+}
