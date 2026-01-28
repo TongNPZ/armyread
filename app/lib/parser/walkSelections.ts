@@ -1,31 +1,14 @@
-// lib/parser/walkSelections.ts
+import type { SelectionNode } from "./types"
 
-type SelectionNode = {
-    id?: string
-    name?: string
-    type?: string
-    selections?: SelectionNode[]
-    profiles?: unknown[]
-    categories?: unknown[]
-    rules?: unknown[]
-    costs?: unknown[]
-}
-
-/**
- * Recursively walk through New Recruit selections tree
- */
 export function walkSelections(
-    selections: SelectionNode[] | undefined,
-    onNode: (node: SelectionNode, depth: number) => void,
-    depth = 0
+    selections: SelectionNode[],
+    cb: (node: SelectionNode) => void
 ) {
-    if (!selections || selections.length === 0) return
+    for (const sel of selections) {
+        cb(sel)
 
-    for (const node of selections) {
-        onNode(node, depth)
-
-        if (Array.isArray(node.selections)) {
-            walkSelections(node.selections, onNode, depth + 1)
+        if (sel.selections?.length) {
+            walkSelections(sel.selections, cb)
         }
     }
 }
