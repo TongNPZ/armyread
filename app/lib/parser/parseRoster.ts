@@ -57,14 +57,23 @@ export function parseRoster(
     walkSelections(selections, (node, parent) => {
         let unit: ArmyListUnit | null = null
 
-        if (node.type === "unit") {
+        // ✅ unit จริง
+        if (node.type === "unit" && parent?.type !== "unit") {
             unit = buildArmyListUnit(node)
-        } else if (node.type === "model" && parent?.type !== "unit") {
+        }
+
+        // ✅ Hero / Character ที่เป็น model
+        else if (node.type === "model" && parent?.type !== "unit") {
             unit = buildArmyListUnitFromModel(node)
         }
 
-        if (unit) units.push(unit)
+        // ❌ กัน unit ผี / model ผี (0 pts)
+        if (!unit || unit.points <= 0) return
+
+        units.push(unit)
     })
+
+
 
     return {
         meta: {
