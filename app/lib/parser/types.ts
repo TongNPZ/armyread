@@ -121,11 +121,30 @@ export type UnitEntry = {
 
 export type NewRecruitRoster = {
     roster?: {
-        forces?: {
-            selections?: SelectionNode[]
-        }[]
+        name?: string
+        points?: {
+            used: number
+            limit: number
+        }
+        forces?: Force[]
     }
 }
+
+export type Force = {
+    name?: string
+    catalogueName?: string
+    faction?: string
+
+    rules?: ArmyRule[]
+
+    detachments?: {
+        name: string
+        rules?: ArmyRule[]
+    }[]
+
+    selections?: SelectionNode[]
+}
+
 
 function hasModelChildren(node: SelectionNode): boolean {
     return !!node.selections?.some(s => s.type === "model")

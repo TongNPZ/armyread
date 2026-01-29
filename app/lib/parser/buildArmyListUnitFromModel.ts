@@ -1,5 +1,6 @@
 import type { SelectionNode } from "./types"
 import type { ArmyListUnit, ArmyListModel } from "./armyListTypes"
+import { getPoints } from "./getPoints"
 
 export function buildArmyListUnitFromModel(
     modelNode: SelectionNode
@@ -16,34 +17,40 @@ export function buildArmyListUnitFromModel(
         extras: []
     }
 
-    // อ่านของใต้ model
     modelNode.selections?.forEach(child => {
-        if (child.type === "upgrade" || child.type === "weapon") {
-            const name = child.name ?? "Unknown"
+        if (child.type !== "upgrade" && child.type !== "weapon") return
 
-            // costs เป็น array → หา points
-            const points = child.costs?.find(
-                c => c.name === "pts" || c.name === "points"
-            )?.value
+        const name = child.name ?? "Unknown"
+        const points = getPoints(child)
 
-            if (points && points > 0) {
-                model.extras.push({ name, points })
-            } else {
-                model.weapons.push({
-                    name,
-                    count: modelCount
-                })
-            }
+        // ✅ Warlord (ไม่มี pts แต่ต้องเป็น extra)
+        if (name.toLowerCase().includes("warlord")) {
+            model.extras.push({ name })
+            return
         }
+
+        // ✅ Enhancement (มี pts)
+        if (points && points > 0) {
+            model.extras.push({ name, points })
+            return
+        }
+
+        // ✅ Weapon / wargear
+        model.weapons.push({
+            name,
+            count: modelCount
+        })
     })
+
+    const isWarlord = model.extras.some(e =>
+        e.name?.toLowerCase().includes("warlord")
+    )
 
     return {
         id: modelNode.id ?? modelName,
         name: modelName,
-        points:
-            modelNode.costs?.find(
-                c => c.name === "pts" || c.name === "points"
-            )?.value ?? 0,
-        models: [model]
+        points: getPoints(modelNode),
+        models: [model],
+        isWarlord
     }
 }

@@ -28,13 +28,16 @@ export function buildArmyListUnit(
         const model = modelsMap.get(modelName)!
         model.count += modelCount
 
-        // อ่านของที่อยู่ใต้ model
-        node.selections?.forEach((child) => {
-            // weapon / wargear ส่วนใหญ่จะอยู่ตรงนี้
-            if (child.type === "upgrade" || child.type === "weapon") {
-                const name = child.name ?? "Unknown"
+        node.selections?.forEach(child => {
+            const name = child.name ?? "Unknown"
 
-                // enhancement / wargear ที่มีแต้ม
+            // ⭐ Warlord (จับตรงนี้)
+            if (name.toLowerCase().includes("warlord")) {
+                model.extras.push({ name: "Warlord" })
+                return
+            }
+
+            if (child.type === "upgrade" || child.type === "weapon") {
                 const points = getPoints(child)
 
                 if (points && points > 0) {
@@ -54,11 +57,25 @@ export function buildArmyListUnit(
         })
     })
 
+    const isWarlord = [...modelsMap.values()].some(model =>
+        model.extras.some(e =>
+            e.name?.toLowerCase().includes("warlord")
+        )
+    )
+    // 🔍 DEBUG OUTPUT
+    console.log("UNIT:", unitNode.name)
+    console.log("isWarlord:", isWarlord)
+    console.log("models:", [...modelsMap.values()])
+    console.log("-------------")
+
     return {
         id: unitNode.id ?? "",
         name: unitNode.name ?? "Unknown Unit",
         points: getPoints(unitNode),
-        models: [...modelsMap.values()]
+        models: [...modelsMap.values()],
+        isWarlord
     }
 
 }
+
+
