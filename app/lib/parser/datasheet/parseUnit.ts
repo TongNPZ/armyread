@@ -1,5 +1,6 @@
 import { parseStatline } from "./parseStatline"
-import type { Unit, SelectionNode } from "./types"
+import type { SelectionNode } from "../roster/rosterImportTypes"
+import type { Unit } from "../datasheet/armyDomainTypes"
 
 export function parseUnitBasic(
     node: SelectionNode

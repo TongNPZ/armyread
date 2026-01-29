@@ -1,4 +1,5 @@
-import type { SelectionNode } from "./types"
+// app/lib/parser/walkSelections.ts
+import type { SelectionNode } from "./rosterImportTypes"
 
 export function walkSelections(
     selections: SelectionNode[] | undefined,

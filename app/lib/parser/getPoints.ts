@@ -1,4 +1,5 @@
-import type { SelectionNode } from "./types"
+// app/lib/parser/getPoints.ts
+import type { SelectionNode } from "./roster/rosterImportTypes"
 
 export function getPoints(node: SelectionNode): number {
     if (!node.costs) return 0

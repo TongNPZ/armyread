@@ -1,5 +1,6 @@
-import type { Statline, Profile } from "./types"
-
+// app/lib/parser/parseStatline.ts
+import type { Profile } from "../roster/rosterImportTypes"
+import type { Statline } from "../datasheet/armyDomainTypes"
 export function parseStatline(
     profiles?: Profile[]
 ): Statline | undefined {

@@ -1,7 +1,9 @@
-import { walkSelections } from "./walkSelections"
-import type { SelectionNode } from "./types"
+// app/lib/parser/armyList/buildArmyListUnit.ts
+import { walkSelections } from "../roster/walkSelections"
+import type { SelectionNode } from "../roster/rosterImportTypes"
 import type { ArmyListUnit, ArmyListModel } from "./armyListTypes"
-import { getPoints } from "./getPoints"
+import { getPoints } from "../getPoints"
+import { getPrimaryCategoryFromNode } from "./getPrimaryCategory"
 
 export function buildArmyListUnit(
     unitNode: SelectionNode
@@ -10,7 +12,7 @@ export function buildArmyListUnit(
 
     const modelsMap = new Map<string, ArmyListModel>()
 
-    walkSelections(unitNode.selections, (node) => {
+    walkSelections(unitNode.selections, node => {
         if (node.type !== "model") return
 
         const modelName = node.name ?? "Unknown Model"
@@ -31,7 +33,7 @@ export function buildArmyListUnit(
         node.selections?.forEach(child => {
             const name = child.name ?? "Unknown"
 
-            // ⭐ Warlord (จับตรงนี้)
+            // ⭐ Warlord
             if (name.toLowerCase().includes("warlord")) {
                 model.extras.push({ name: "Warlord" })
                 return
@@ -59,23 +61,18 @@ export function buildArmyListUnit(
 
     const isWarlord = [...modelsMap.values()].some(model =>
         model.extras.some(e =>
-            e.name?.toLowerCase().includes("warlord")
+            e.name.toLowerCase().includes("warlord")
         )
     )
-    // 🔍 DEBUG OUTPUT
-    console.log("UNIT:", unitNode.name)
-    console.log("isWarlord:", isWarlord)
-    console.log("models:", [...modelsMap.values()])
-    console.log("-------------")
 
     return {
         id: unitNode.id ?? "",
         name: unitNode.name ?? "Unknown Unit",
         points: getPoints(unitNode),
         models: [...modelsMap.values()],
-        isWarlord
+        isWarlord,
+
+        // ⭐ ตรงนี้คือกุญแจ
+        category: getPrimaryCategoryFromNode(unitNode)
     }
-
 }
-
-
