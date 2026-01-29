@@ -7,9 +7,8 @@ export function parseUnitEntries(
 ): Record<string, UnitEntry> {
     const entries: Record<string, UnitEntry> = {}
 
-    walkSelections(selections, (node, depth) => {
-        // ❌ ไม่สร้าง UnitEntry จาก model ที่เป็น child
-        if (node.type === "model" && depth > 0) return
+    walkSelections(selections, (node, parent, depth) => {
+        if (node.type === "model" && parent?.type === "unit") return
 
         const entry = parseUnitEntry(node)
         if (entry) {
@@ -17,5 +16,7 @@ export function parseUnitEntries(
         }
     })
 
+
     return entries
 }
+

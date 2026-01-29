@@ -9,7 +9,7 @@ export function debugWalkSelections() {
 
     walkSelections(
         data.roster?.forces?.[0]?.selections,
-        (node, depth) => {
+        (node, _parent, depth) => {
             if (node.type === "model") {
                 console.log(
                     " ".repeat(depth * 2) + "- " + (node.name ?? "UNKNOWN MODEL")
@@ -17,6 +17,7 @@ export function debugWalkSelections() {
             }
         }
     )
+
 
     console.log("=== DEBUG WALK SELECTIONS END ===")
 }
