@@ -2,76 +2,129 @@
 import type { Force, ArmyRule } from "../roster/rosterImportTypes"
 import { walkSelections } from "../roster/walkSelections"
 
-export type ArmyRuleWithReferences = ArmyRule & {
-    references?: ArmyRule[]
+export type ArmyRuleReferenceGroup = {
+    title: string
+    rules: ArmyRule[]
 }
 
-export function normalizeArmyRules(force?: Force): ArmyRuleWithReferences[] {
+export type ArmyRuleWithReferences = {
+    id: string
+    name: string
+    description: string
+    references?: ArmyRuleReferenceGroup[]
+}
+
+/* characteristic ที่บ่งบอกว่าเป็น stat block */
+const STAT_CHARACTERISTICS = new Set([
+    "Range",
+    "A",
+    "Attacks",
+    "WS",
+    "BS",
+    "S",
+    "Strength",
+    "AP",
+    "D",
+    "Damage",
+    "Keywords",
+])
+
+export function normalizeArmyRules(
+    force?: Force
+): ArmyRuleWithReferences[] {
     if (!force) return []
 
-    let mainRule: ArmyRuleWithReferences | null = null
-    const references: ArmyRule[] = []
+    let mainRuleBase: ArmyRule | undefined
     const seen = new Set<string>()
+    const referenceGroups: ArmyRuleReferenceGroup[] = []
 
-    walkSelections(force.selections ?? [], (node, parent) => {
+    walkSelections(force.selections ?? [], (node) => {
         /* ===== 1️⃣ Army Rule หลัก ===== */
         node.rules?.forEach(rule => {
             if (
+                !mainRuleBase &&
                 rule.description?.includes("If your Army Faction is")
             ) {
-                if (mainRule) return
-
-                mainRule = {
+                mainRuleBase = {
                     id: rule.id,
                     name: rule.name,
                     description: rule.description,
-                    references: [],
                 }
                 seen.add(rule.id)
             }
         })
 
-        /* ===== 2️⃣ Reference tables ===== */
-        node.profiles?.forEach(profile => {
-            // ❌ ตัด ability / aura / unit / model
-            if (
-                profile.typeName === "Abilities" ||
-                profile.name?.includes("(Aura)") ||
-                parent?.type === "unit" ||
-                parent?.type === "model" ||
-                node.type === "unit" ||
-                node.type === "model"
-            ) return
+        /* ===== 2️⃣ Reference groups ===== */
+        if (
+            node.type === "upgrade" &&
+            node.name &&
+            node.profiles?.length
+        ) {
+            const rules: ArmyRule[] = []
 
-            // ✅ reference ต้องขึ้นต้นด้วยเลข
-            if (!profile.name || !/^\d+\./.test(profile.name)) return
+            node.profiles.forEach(profile => {
+                if (!profile.characteristics) return
 
-            const effectChar = profile.characteristics?.find(
-                c => c.name === "Effect"
-            )
+                /* ❌ 1) ตัด stat / weapon profile */
+                const isStatProfile = profile.characteristics.some(c =>
+                    STAT_CHARACTERISTICS.has(c.name)
+                )
+                if (isStatProfile) return
 
-            const effect = effectChar?.$text ?? effectChar?.value
+                /* ❌ 2) ตัด bearer-bound rule (Scattershield ฯลฯ) */
+                const isBearerRule = profile.characteristics.some(c =>
+                    (c.$text ?? c.value)
+                        ?.toLowerCase()
+                        .startsWith("the bearer")
+                )
+                if (isBearerRule) return
 
+                const parts: string[] = []
 
-            if (!effect) return
+                for (const c of profile.characteristics) {
+                    const value = c.$text ?? c.value
+                    if (!value) continue
 
-            const id = profile.id ?? profile.name
-            if (seen.has(id)) return
-            seen.add(id)
+                    if (c.name && c.name !== "Effect") {
+                        parts.push(`${c.name}: ${value}`)
+                    } else {
+                        parts.push(value)
+                    }
+                }
 
-            references.push({
-                id,
-                name: profile.name,
-                description: effect,
+                if (parts.length === 0) return
+
+                const id = profile.id ?? profile.name
+                if (!id || seen.has(id)) return
+                seen.add(id)
+
+                rules.push({
+                    id,
+                    name: profile.name ?? "Rule",
+                    description: parts.join("\n"),
+                })
             })
-        })
+
+            if (rules.length > 0) {
+                referenceGroups.push({
+                    title: node.name,
+                    rules,
+                })
+            }
+        }
     })
 
-    if (!mainRule) return []
+    if (!mainRuleBase) return []
 
-    if (references.length > 0) {
-        mainRule.references!.push(...references)
-    }
-
-    return [mainRule]
+    return [
+        {
+            id: mainRuleBase.id,
+            name: mainRuleBase.name,
+            description: mainRuleBase.description,
+            references:
+                referenceGroups.length > 0
+                    ? referenceGroups
+                    : undefined,
+        },
+    ]
 }

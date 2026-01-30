@@ -115,14 +115,15 @@ export default function Page() {
             {/* ===== ARMY HEADER ===== */}
             <section className="space-y-4 border border-zinc-700 rounded-xl p-6 bg-zinc-900/80 shadow-[0_0_25px_rgba(255,255,255,0.05)]">
 
-                <div className="text-sm uppercase tracking-wide text-zinc-400">
-                    FACTION KEYWORD:
-                    <span className="ml-2 text-zinc-200 font-medium">
+                <div className="text-xl uppercase tracking-wide text-zinc-400 ">
+                    FACTION KEYWORD :{" "}
+                    <span className=" text-xl font-semibold text-zinc-100">
                         {meta.faction}
                     </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+
                     <div>
                         <span className="text-zinc-400">
                             TOTAL ARMY POINTS:
@@ -151,10 +152,10 @@ export default function Page() {
                         </span>
                     </div>
                 </div>
+                
                 {/* ===== ARMY RULES ===== */}
                 {armyRules.map(rule => (
-                    <div key={rule.id} className="text-sm space-y-2">
-                        {/* Main Army Rule */}
+                    <div key={rule.id} className="text-sm space-y-3">
                         <div>
                             <span className="text-zinc-400">Army Rule:</span>{" "}
                             <span className="font-medium text-zinc-200">
@@ -167,36 +168,42 @@ export default function Page() {
                         </div>
 
                         {/* ===== REFERENCES ===== */}
-                        {rule.references && rule.references.length > 0 && (
-                            <div className="mt-3 ml-4 space-y-2">
-                                <div className="text-zinc-500 uppercase tracking-wide text-xs">
-                                    Reference
+                        {rule.references?.map(ref => (
+                            <div
+                                key={ref.title}
+                                className="mt-3 ml-4 space-y-2 border-l border-zinc-700 pl-4"
+                            >
+                                <div className="text-zinc-300 font-medium">
+                                    {ref.title}
                                 </div>
 
-                                {rule.references.map(ref => (
-                                    <div key={ref.id} className="space-y-0.5">
-                                        <div className="font-medium text-zinc-300">
-                                            {ref.name}
-                                        </div>
-                                        <div className="text-zinc-400 whitespace-pre-line">
-                                            {ref.description}
-                                        </div>
-                                    </div>
-                                ))}
+                                <ul className="space-y-1 text-zinc-400">
+                                    {ref.rules.map(r => (
+                                        <li key={r.id}>
+                                            <span className="font-medium text-zinc-200">
+                                                {r.name}
+                                            </span>
+                                            <div className="whitespace-pre-line">
+                                                {r.description}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                        )}
+                        ))}
                     </div>
                 ))}
+
 
 
                 {/* ===== DETACHMENT ===== */}
                 {detachment && (
                     <div className="text-sm space-y-1">
                         <div>
-                            <span className="text-zinc-400">
+                            <span className="text-xl uppercase tracking-wide text-zinc-400 ">
                                 DETACHMENT:
                             </span>{" "}
-                            <span className="font-medium text-zinc-200">
+                            <span className="text-xl font-semibold text-zinc-100">
                                 {detachment.name}
                             </span>
                         </div>

@@ -9,7 +9,7 @@ import type {
     Force,
     ArmyRule,
 } from "./roster/rosterImportTypes"
-import { normalizeArmyRules } from "./armyList/normalizeArmyRules"
+import { normalizeArmyRules, type ArmyRuleWithReferences } from "./armyList/normalizeArmyRules"
 
 export type ParsedRoster = {
     meta: {
@@ -21,7 +21,7 @@ export type ParsedRoster = {
         }
     }
 
-    armyRules: ArmyRule[]
+    armyRules: ArmyRuleWithReferences[]
     detachment?: {
         name?: string
         rules?: ArmyRule[]
