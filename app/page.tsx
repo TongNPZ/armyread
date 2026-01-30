@@ -151,23 +151,43 @@ export default function Page() {
                         </span>
                     </div>
                 </div>
-
                 {/* ===== ARMY RULES ===== */}
                 {armyRules.map(rule => (
-                    <div key={rule.id} className="text-sm space-y-1">
+                    <div key={rule.id} className="text-sm space-y-2">
+                        {/* Main Army Rule */}
                         <div>
-                            <span className="text-zinc-400">
-                                Army Rule:
-                            </span>{" "}
+                            <span className="text-zinc-400">Army Rule:</span>{" "}
                             <span className="font-medium text-zinc-200">
                                 {rule.name}
                             </span>
                         </div>
+
                         <div className="text-zinc-400 whitespace-pre-line">
                             {rule.description}
                         </div>
+
+                        {/* ===== REFERENCES ===== */}
+                        {rule.references && rule.references.length > 0 && (
+                            <div className="mt-3 ml-4 space-y-2">
+                                <div className="text-zinc-500 uppercase tracking-wide text-xs">
+                                    Reference
+                                </div>
+
+                                {rule.references.map(ref => (
+                                    <div key={ref.id} className="space-y-0.5">
+                                        <div className="font-medium text-zinc-300">
+                                            {ref.name}
+                                        </div>
+                                        <div className="text-zinc-400 whitespace-pre-line">
+                                            {ref.description}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 ))}
+
 
                 {/* ===== DETACHMENT ===== */}
                 {detachment && (

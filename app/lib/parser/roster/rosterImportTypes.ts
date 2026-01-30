@@ -12,6 +12,7 @@ export type ArmyRule = {
 export type ProfileCharacteristic = {
     name: string
     value: string
+    $text?: string
 }
 
 export type Profile = {

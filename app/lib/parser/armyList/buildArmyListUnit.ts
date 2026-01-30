@@ -71,8 +71,6 @@ export function buildArmyListUnit(
         points: getPoints(unitNode),
         models: [...modelsMap.values()],
         isWarlord,
-
-        // ⭐ ตรงนี้คือกุญแจ
         category: getPrimaryCategoryFromNode(unitNode)
     }
 }

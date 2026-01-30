@@ -9,6 +9,7 @@ import type {
     Force,
     ArmyRule,
 } from "./roster/rosterImportTypes"
+import { normalizeArmyRules } from "./armyList/normalizeArmyRules"
 
 export type ParsedRoster = {
     meta: {
@@ -52,42 +53,43 @@ export function parseRoster(
     const detachment =
         detachmentNode?.selections?.[0]
 
+    /* ✅ ตรงนี้เท่านั้น */
+    const armyRules = normalizeArmyRules(force)
+
+    console.log("NORMALIZED ARMY RULES:", armyRules)
     const units: ArmyListUnit[] = []
 
     walkSelections(selections, (node, parent) => {
         let unit: ArmyListUnit | null = null
 
-        // ✅ unit จริง
         if (node.type === "unit" && parent?.type !== "unit") {
             unit = buildArmyListUnit(node)
-        }
-
-        // ✅ Hero / Character ที่เป็น model
-        else if (node.type === "model" && parent?.type !== "unit") {
+        } else if (node.type === "model" && parent?.type !== "unit") {
             unit = buildArmyListUnitFromModel(node)
         }
 
-        // ❌ กัน unit ผี / model ผี (0 pts)
         if (!unit || unit.points <= 0) return
-
         units.push(unit)
     })
-
-
-
+    console.log("FORCE:", force)
+    console.log("FORCE.RULES:", force.rules)
+    console.log("FORCE.SELECTIONS:", force.selections)
     return {
         meta: {
             name: roster.name,
             faction: force.catalogueName ?? force.name,
             points: { used, limit },
         },
-        armyRules: force.rules ?? [],
+
+        armyRules, // ✅ ตอนนี้จะมี Blessings of Khorne แล้ว
+
         detachment: detachment
             ? {
                 name: detachment.name,
                 rules: detachment.rules,
             }
             : undefined,
+
         units,
     }
 }
