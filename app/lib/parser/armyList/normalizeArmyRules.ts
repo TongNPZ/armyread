@@ -14,7 +14,7 @@ export type ArmyRuleWithReferences = {
     references?: ArmyRuleReferenceGroup[]
 }
 
-/* characteristic ที่บ่งบอกว่าเป็น stat block */
+/* characteristic ที่บ่งบอกว่าเป็น stat / weapon block */
 const STAT_CHARACTERISTICS = new Set([
     "Range",
     "A",
@@ -29,12 +29,18 @@ const STAT_CHARACTERISTICS = new Set([
     "Keywords",
 ])
 
-/* คำที่บ่งบอกว่าเป็น rule ผูกกับ unit / model */
-const UNIT_BOUND_PHRASES = [
+/* unit-bound แบบตัดทิ้งทันที (relic / enhancement แน่นอน) */
+const HARD_UNIT_BOUND_PHRASES = [
     "the bearer",
-    "this unit",
-    "this model",
+    "equipped by the bearer",
+    "model only",
     "this fortification",
+]
+
+/* unit-bound แบบ soft (ต้องดูร่วมกับอย่างอื่น) */
+const SOFT_UNIT_BOUND_PHRASES = [
+    "this model",
+    "this unit",
 ]
 
 export function normalizeArmyRules(
@@ -79,16 +85,31 @@ export function normalizeArmyRules(
                 )
                 if (isStatProfile) return
 
-                /* ❌ 2) ตัด rule ที่ผูกกับ unit / model / fortification */
-                const isUnitBound = profile.characteristics.some(c => {
-                    const text = (c.$text ?? c.value)?.toLowerCase()
-                    if (!text) return false
-                    return UNIT_BOUND_PHRASES.some(p =>
-                        text.includes(p)
-                    )
-                })
-                if (isUnitBound) return
+                const textBlob = profile.characteristics
+                    .map(c => (c.$text ?? c.value)?.toLowerCase() ?? "")
+                    .join(" ")
 
+                /* ❌ 2) ตัด hard unit-bound (relic / enhancement) */
+                const hasHardUnitBound =
+                    HARD_UNIT_BOUND_PHRASES.some(p =>
+                        textBlob.includes(p)
+                    )
+                if (hasHardUnitBound) return
+
+                /* ❌ 3) ตัด soft unit-bound เฉพาะกรณีแก้ weapon stat */
+                const hasSoftUnitBound =
+                    SOFT_UNIT_BOUND_PHRASES.some(p =>
+                        textBlob.includes(p)
+                    )
+
+                const modifiesWeaponStats =
+                    textBlob.includes("strength characteristic") ||
+                    textBlob.includes("armour penetration") ||
+                    textBlob.includes("damage characteristic")
+
+                if (hasSoftUnitBound && modifiesWeaponStats) return
+
+                /* ===== build description ===== */
                 const parts: string[] = []
 
                 for (const c of profile.characteristics) {

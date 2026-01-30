@@ -23,6 +23,7 @@ export type ParsedRoster = {
 
     armyRules: ArmyRuleWithReferences[]
     detachment?: {
+        id: string
         name?: string
         rules?: ArmyRule[]
     }
@@ -83,8 +84,9 @@ export function parseRoster(
 
         armyRules, // ✅ ตอนนี้จะมี Blessings of Khorne แล้ว
 
-        detachment: detachment
+        detachment: detachment?.id
             ? {
+                id: detachment.id,
                 name: detachment.name,
                 rules: detachment.rules,
             }

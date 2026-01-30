@@ -23,3 +23,9 @@ const config: Config = {
 }
 
 export default config
+
+module.exports = {
+    plugins: [
+        require('tailwind-scrollbar'),
+    ],
+}
