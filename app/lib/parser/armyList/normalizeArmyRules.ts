@@ -29,6 +29,14 @@ const STAT_CHARACTERISTICS = new Set([
     "Keywords",
 ])
 
+/* คำที่บ่งบอกว่าเป็น rule ผูกกับ unit / model */
+const UNIT_BOUND_PHRASES = [
+    "the bearer",
+    "this unit",
+    "this model",
+    "this fortification",
+]
+
 export function normalizeArmyRules(
     force?: Force
 ): ArmyRuleWithReferences[] {
@@ -38,7 +46,7 @@ export function normalizeArmyRules(
     const seen = new Set<string>()
     const referenceGroups: ArmyRuleReferenceGroup[] = []
 
-    walkSelections(force.selections ?? [], (node) => {
+    walkSelections(force.selections ?? [], node => {
         /* ===== 1️⃣ Army Rule หลัก ===== */
         node.rules?.forEach(rule => {
             if (
@@ -71,13 +79,15 @@ export function normalizeArmyRules(
                 )
                 if (isStatProfile) return
 
-                /* ❌ 2) ตัด bearer-bound rule (Scattershield ฯลฯ) */
-                const isBearerRule = profile.characteristics.some(c =>
-                    (c.$text ?? c.value)
-                        ?.toLowerCase()
-                        .startsWith("the bearer")
-                )
-                if (isBearerRule) return
+                /* ❌ 2) ตัด rule ที่ผูกกับ unit / model / fortification */
+                const isUnitBound = profile.characteristics.some(c => {
+                    const text = (c.$text ?? c.value)?.toLowerCase()
+                    if (!text) return false
+                    return UNIT_BOUND_PHRASES.some(p =>
+                        text.includes(p)
+                    )
+                })
+                if (isUnitBound) return
 
                 const parts: string[] = []
 
