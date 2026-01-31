@@ -1,26 +1,44 @@
-// app/lib/parser/armyListTypes.ts
-export type ArmyListUnit = {
-    id: string
+// app/lib/parser/armyList/armyListTypes.ts
+
+export type ArmyListWeapon = {
     name: string
-    points: number
-    isWarlord?: boolean
-
-    category: string     
-    keywords?: string[]
-
-    models: ArmyListModel[]
+    count: number
+    range?: string
+    attacks?: string
+    skill?: string
+    strength?: string
+    ap?: string
+    damage?: string
+    abilities?: string
 }
+
 export type ArmyListModel = {
     name: string
     count: number
+    weapons: ArmyListWeapon[]
+    extras: { name: string; points?: number }[]
+}
 
-    weapons: {
-        name: string
-        count: number
-    }[]
+export type StatItem = {
+    name: string
+    value: string
+}
 
-    extras: {
-        name: string
-        points?: number
-    }[]
+export type AbilityRule = {
+    name: string
+    description: string
+}
+
+export type ArmyListUnit = {
+    id: string
+    name: string
+    category: string
+    points: number
+    isWarlord: boolean
+    models: ArmyListModel[]
+    // ✅ เพิ่มส่วนนี้เพื่อให้ Datasheet ไม่แดง
+    stats?: StatItem[]
+    abilities?: Record<string, AbilityRule[]>
+    keywords?: string[]
+    factionKeywords?: string[]
 }
