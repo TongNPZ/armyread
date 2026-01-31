@@ -36,7 +36,7 @@ export type ArmyListUnit = {
     points: number
     isWarlord: boolean
     models: ArmyListModel[]
-    // ✅ เพิ่มส่วนนี้เพื่อให้ Datasheet ไม่แดง
+    // ✅ เพิ่มฟิลด์ใหม่สำหรับ Datasheet
     stats?: StatItem[]
     abilities?: Record<string, AbilityRule[]>
     keywords?: string[]

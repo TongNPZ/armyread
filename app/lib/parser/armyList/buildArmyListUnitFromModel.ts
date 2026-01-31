@@ -3,6 +3,8 @@ import type { SelectionNode } from "../roster/rosterImportTypes"
 import type { ArmyListUnit, ArmyListModel } from "./armyListTypes"
 import { getPoints } from "../getPoints"
 import { getPrimaryCategoryFromNode } from "./getPrimaryCategory"
+// ✅ Import Helper
+import { getUnitStats, getWeaponStats, getAbilitiesAndKeywords } from "./armyListHelpers"
 
 export function buildArmyListUnitFromModel(
     modelNode: SelectionNode
@@ -13,6 +15,10 @@ export function buildArmyListUnitFromModel(
     const modelName = modelNode.name
     const modelCount = modelNode.number ?? 1
 
+    // ✅ 1. ดึง Stats, Abilities จาก Model Node
+    const stats = getUnitStats(modelNode)
+    const { abilities, keywords, factionKeywords } = getAbilitiesAndKeywords(modelNode)
+
     const model: ArmyListModel = {
         name: modelName,
         count: modelCount,
@@ -21,34 +27,31 @@ export function buildArmyListUnitFromModel(
     }
 
     modelNode.selections?.forEach(child => {
-        if (child.type !== "upgrade" && child.type !== "weapon") return
         if (!child.name) return
 
         const name = child.name
         const points = getPoints(child)
 
-        /* ===== WARLORD ===== */
         if (name.toLowerCase().includes("warlord")) {
             model.extras.push({ name: "Warlord" })
             return
         }
 
-        /* ===== ENHANCEMENT ===== */
-        if (points && points > 0) {
-            model.extras.push({ name, points })
+        // ✅ Weapons Check
+        const weaponProfiles = getWeaponStats(child)
+        if (weaponProfiles.length > 0) {
+            weaponProfiles.forEach(wp => {
+                model.weapons.push({ ...wp, count: modelCount })
+            })
             return
         }
 
-        /* ===== WEAPON / WARGEAR ===== */
-        model.weapons.push({
-            name,
-            count: modelCount,
-        })
+        if (child.type === "upgrade") {
+             model.extras.push({ name, points })
+        }
     })
 
-    const isWarlord = model.extras.some(e =>
-        e.name.toLowerCase().includes("warlord")
-    )
+    const isWarlord = model.extras.some(e => e.name.toLowerCase().includes("warlord"))
 
     return {
         id: modelNode.id ?? modelName,
@@ -57,5 +60,9 @@ export function buildArmyListUnitFromModel(
         category: getPrimaryCategoryFromNode(modelNode),
         models: [model],
         isWarlord,
+        stats,            // ✅ Stats
+        abilities,        // ✅ Abilities
+        keywords,         // ✅ Keywords
+        factionKeywords   // ✅ Faction Keywords
     }
 }
