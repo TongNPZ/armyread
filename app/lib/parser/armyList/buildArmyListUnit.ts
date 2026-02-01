@@ -4,7 +4,6 @@ import type { SelectionNode } from "../roster/rosterImportTypes"
 import type { ArmyListUnit, ArmyListModel } from "./armyListTypes"
 import { getPoints } from "../getPoints"
 import { getPrimaryCategoryFromNode } from "./getPrimaryCategory"
-// ✅ Import Helper
 import { getUnitStats, getWeaponStats, getAbilitiesAndKeywords } from "./armyListHelpers"
 
 export function buildArmyListUnit(
@@ -14,7 +13,6 @@ export function buildArmyListUnit(
 
     const modelsMap = new Map<string, ArmyListModel>()
 
-    // ✅ 1. ดึง Stats, Abilities, Keywords ของ Unit
     const stats = getUnitStats(unitNode)
     const { abilities, keywords, factionKeywords } = getAbilitiesAndKeywords(unitNode)
 
@@ -44,23 +42,23 @@ export function buildArmyListUnit(
                 return
             }
 
-            // ✅ Weapons: ใช้ Helper ดึง Profile
+            // ✅ Logic ใหม่สำหรับ Grouping Weapons
             if (child.type === "weapon" || child.type === "upgrade") {
-                const weaponProfiles = getWeaponStats(child)
-                
-                if (weaponProfiles.length > 0) {
-                    weaponProfiles.forEach(wp => {
-                        const existing = model.weapons.find(w => w.name === wp.name)
+                const weaponGroups = getWeaponStats(child)
+
+                if (weaponGroups.length > 0) {
+                    weaponGroups.forEach(wg => {
+                        const existing = model.weapons.find(w => w.name === wg.name)
                         if (existing) {
                             existing.count += modelCount
                         } else {
-                            model.weapons.push({ ...wp, count: modelCount })
+                            model.weapons.push({ ...wg, count: modelCount })
                         }
                     })
                 } else if (child.type === "upgrade") {
                     const points = getPoints(child)
-                    if ((points && points > 0) || !child.name?.includes("Weapon")) { 
-                         model.extras.push({ name, points })
+                    if ((points && points > 0) || !child.name?.toLowerCase().includes("weapon")) {
+                        model.extras.push({ name, points })
                     }
                 }
             }
@@ -78,9 +76,9 @@ export function buildArmyListUnit(
         models: [...modelsMap.values()],
         isWarlord,
         category: getPrimaryCategoryFromNode(unitNode),
-        stats,            // ✅ ส่ง Stats
-        abilities,        // ✅ ส่ง Abilities
-        keywords,         // ✅ ส่ง Keywords
-        factionKeywords   // ✅ ส่ง Faction Keywords
+        stats,
+        abilities,
+        keywords,
+        factionKeywords
     }
 }

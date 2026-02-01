@@ -3,7 +3,6 @@ import type { SelectionNode } from "../roster/rosterImportTypes"
 import type { ArmyListUnit, ArmyListModel } from "./armyListTypes"
 import { getPoints } from "../getPoints"
 import { getPrimaryCategoryFromNode } from "./getPrimaryCategory"
-// ✅ Import Helper
 import { getUnitStats, getWeaponStats, getAbilitiesAndKeywords } from "./armyListHelpers"
 
 export function buildArmyListUnitFromModel(
@@ -15,7 +14,6 @@ export function buildArmyListUnitFromModel(
     const modelName = modelNode.name
     const modelCount = modelNode.number ?? 1
 
-    // ✅ 1. ดึง Stats, Abilities จาก Model Node
     const stats = getUnitStats(modelNode)
     const { abilities, keywords, factionKeywords } = getAbilitiesAndKeywords(modelNode)
 
@@ -37,17 +35,16 @@ export function buildArmyListUnitFromModel(
             return
         }
 
-        // ✅ Weapons Check
-        const weaponProfiles = getWeaponStats(child)
-        if (weaponProfiles.length > 0) {
-            weaponProfiles.forEach(wp => {
-                model.weapons.push({ ...wp, count: modelCount })
+        const weaponGroups = getWeaponStats(child)
+        if (weaponGroups.length > 0) {
+            weaponGroups.forEach(wg => {
+                model.weapons.push({ ...wg, count: modelCount })
             })
             return
         }
 
         if (child.type === "upgrade") {
-             model.extras.push({ name, points })
+            model.extras.push({ name, points })
         }
     })
 
@@ -60,9 +57,9 @@ export function buildArmyListUnitFromModel(
         category: getPrimaryCategoryFromNode(modelNode),
         models: [model],
         isWarlord,
-        stats,            // ✅ Stats
-        abilities,        // ✅ Abilities
-        keywords,         // ✅ Keywords
-        factionKeywords   // ✅ Faction Keywords
+        stats,
+        abilities,
+        keywords,
+        factionKeywords
     }
 }
