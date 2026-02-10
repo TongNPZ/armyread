@@ -1,6 +1,3 @@
-// app/lib/parser/armyList/armyListTypes.ts
-
-// ✅ Profile ของอาวุธ (เช่น Strike Profile, Sweep Profile)
 export type WeaponProfile = {
     name: string
     keywords: string[]
@@ -12,7 +9,6 @@ export type WeaponProfile = {
     damage: string
 }
 
-// ✅ โครงสร้างอาวุธหลัก (เก็บ Profile ย่อยไว้ข้างใน)
 export type ArmyListWeapon = {
     name: string
     count: number
@@ -23,7 +19,9 @@ export type ArmyListModel = {
     name: string
     count: number
     weapons: ArmyListWeapon[]
-    extras: { name: string; points?: number }[]
+    // ✅ แยกเก็บชัดเจน
+    wargear: { name: string; count: number }[]
+    enhancements: { name: string; points?: number }[]
 }
 
 export type StatItem = {
@@ -44,7 +42,6 @@ export type ArmyListUnit = {
     isWarlord: boolean
     models: ArmyListModel[]
     stats?: StatItem[]
-    // ✅ แบ่งหมวดหมู่ Ability ให้ชัดเจน
     abilities?: Record<string, AbilityRule[]>
     keywords?: string[]
     factionKeywords?: string[]

@@ -1,4 +1,3 @@
-// app/lib/parser/armyList/buildArmyListUnit.ts
 import { walkSelections } from "../roster/walkSelections"
 import type { SelectionNode } from "../roster/rosterImportTypes"
 import type { ArmyListUnit, ArmyListModel } from "./armyListTypes"
@@ -12,11 +11,22 @@ export function buildArmyListUnit(
     if (unitNode.type !== "unit") return null
 
     const modelsMap = new Map<string, ArmyListModel>()
-
     const stats = getUnitStats(unitNode)
     const { abilities, keywords, factionKeywords } = getAbilitiesAndKeywords(unitNode)
 
+    let unitIsWarlord = false;
+
+    // Helper: เช็คว่าเป็น Warlord หรือไม่
+    const checkIsWarlord = (node: SelectionNode) => {
+        if (node.name?.toLowerCase().includes("warlord")) return true;
+        if (node.categories?.some(c => c.name === "Warlord")) return true;
+        return false;
+    };
+
+    if (checkIsWarlord(unitNode)) unitIsWarlord = true;
+
     walkSelections(unitNode.selections, node => {
+        if (checkIsWarlord(node)) unitIsWarlord = true;
         if (node.type !== "model") return
 
         const modelName = node.name ?? "Unknown Model"
@@ -27,7 +37,8 @@ export function buildArmyListUnit(
                 name: modelName,
                 count: 0,
                 weapons: [],
-                extras: []
+                wargear: [],
+                enhancements: []
             })
         }
 
@@ -36,45 +47,71 @@ export function buildArmyListUnit(
 
         node.selections?.forEach(child => {
             const name = child.name ?? "Unknown"
+            if (checkIsWarlord(child)) unitIsWarlord = true;
 
-            if (name.toLowerCase().includes("warlord")) {
-                model.extras.push({ name: "Warlord" })
-                return
+            const countToAdd = (child.number && child.number > 0) ? child.number : modelCount;
+
+            // 1. Weapon Stats
+            const weaponGroups = getWeaponStats(child)
+            if (weaponGroups.length > 0) {
+                weaponGroups.forEach(wg => {
+                    const existing = model.weapons.find(w => w.name === wg.name)
+                    if (existing) {
+                        existing.count += countToAdd
+                    } else {
+                        model.weapons.push({ ...wg, count: countToAdd })
+                    }
+                })
+                return;
             }
 
-            // ✅ Logic ใหม่สำหรับ Grouping Weapons
-            if (child.type === "weapon" || child.type === "upgrade") {
-                const weaponGroups = getWeaponStats(child)
+            // 2. Upgrades (Structural Check Logic)
+            if (child.type === "upgrade") {
+                const points = getPoints(child)
 
-                if (weaponGroups.length > 0) {
-                    weaponGroups.forEach(wg => {
-                        const existing = model.weapons.find(w => w.name === wg.name)
-                        if (existing) {
-                            existing.count += modelCount
+                // --- Structural Filter Start ---
+                const childAny = child as any;
+
+                // ดึงค่า group มาทำเป็นตัวเล็กเพื่อเช็ค (เช่น "Enhancements::Wrath...")
+                const groupStr = (childAny.group && typeof childAny.group === 'string')
+                    ? childAny.group.toLowerCase()
+                    : "";
+
+                const typeNameStr = (childAny.typeName && typeof childAny.typeName === 'string')
+                    ? childAny.typeName.toLowerCase()
+                    : "";
+
+                const isEnhancement =
+                    // 1. เช็คว่าใน Group มีคำว่า enhancement หรือไม่ (สำคัญที่สุดสำหรับ New Recruit)
+                    groupStr.includes("enhancement") ||
+                    // 2. เช็ค TypeName
+                    typeNameStr === "enhancement" ||
+                    // 3. เช็ค Categories ของตัว Upgrade นั้น
+                    child.categories?.some(c => c.name?.toLowerCase().includes("enhancement"));
+                // --- Structural Filter End ---
+
+                if (isEnhancement) {
+                    model.enhancements.push({ name, points })
+                } else {
+                    if (!checkIsWarlord(child)) {
+                        const existingWargear = model.wargear.find(w => w.name === name)
+                        if (existingWargear) {
+                            existingWargear.count += countToAdd
                         } else {
-                            model.weapons.push({ ...wg, count: modelCount })
+                            model.wargear.push({ name, count: countToAdd })
                         }
-                    })
-                } else if (child.type === "upgrade") {
-                    const points = getPoints(child)
-                    if ((points && points > 0) || !child.name?.toLowerCase().includes("weapon")) {
-                        model.extras.push({ name, points })
                     }
                 }
             }
         })
     })
 
-    const isWarlord = [...modelsMap.values()].some(model =>
-        model.extras.some(e => e.name.toLowerCase().includes("warlord"))
-    )
-
     return {
         id: unitNode.id ?? "",
         name: unitNode.name ?? "Unknown Unit",
         points: getPoints(unitNode),
         models: [...modelsMap.values()],
-        isWarlord,
+        isWarlord: unitIsWarlord,
         category: getPrimaryCategoryFromNode(unitNode),
         stats,
         abilities,

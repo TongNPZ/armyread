@@ -1,4 +1,4 @@
-// app/lib/parser/armyList/buildArmyListUnitFromModel.ts
+import { walkSelections } from "../roster/walkSelections"
 import type { SelectionNode } from "../roster/rosterImportTypes"
 import type { ArmyListUnit, ArmyListModel } from "./armyListTypes"
 import { getPoints } from "../getPoints"
@@ -8,55 +8,101 @@ import { getUnitStats, getWeaponStats, getAbilitiesAndKeywords } from "./armyLis
 export function buildArmyListUnitFromModel(
     modelNode: SelectionNode
 ): ArmyListUnit | null {
-    if (modelNode.type !== "model") return null
-    if (!modelNode.name) return null
-
-    const modelName = modelNode.name
-    const modelCount = modelNode.number ?? 1
-
+    const modelsMap = new Map<string, ArmyListModel>()
     const stats = getUnitStats(modelNode)
     const { abilities, keywords, factionKeywords } = getAbilitiesAndKeywords(modelNode)
+
+    let unitIsWarlord = false;
+
+    const checkIsWarlord = (node: SelectionNode) => {
+        if (node.name?.toLowerCase().includes("warlord")) return true;
+        if (node.categories?.some(c => c.name === "Warlord")) return true;
+        return false;
+    };
+
+    if (checkIsWarlord(modelNode)) unitIsWarlord = true;
+
+    const modelName = modelNode.name ?? "Unknown Model"
+    const modelCount = modelNode.number ?? 1
 
     const model: ArmyListModel = {
         name: modelName,
         count: modelCount,
         weapons: [],
-        extras: [],
+        wargear: [],
+        enhancements: []
     }
 
-    modelNode.selections?.forEach(child => {
-        if (!child.name) return
+    modelsMap.set(modelName, model)
 
-        const name = child.name
-        const points = getPoints(child)
+    if (modelNode.selections) {
+        walkSelections(modelNode.selections, child => {
+            const name = child.name ?? "Unknown"
 
-        if (name.toLowerCase().includes("warlord")) {
-            model.extras.push({ name: "Warlord" })
-            return
-        }
+            if (checkIsWarlord(child)) unitIsWarlord = true;
 
-        const weaponGroups = getWeaponStats(child)
-        if (weaponGroups.length > 0) {
-            weaponGroups.forEach(wg => {
-                model.weapons.push({ ...wg, count: modelCount })
-            })
-            return
-        }
+            const countToAdd = (child.number && child.number > 0) ? child.number : modelCount;
 
-        if (child.type === "upgrade") {
-            model.extras.push({ name, points })
-        }
-    })
+            const weaponGroups = getWeaponStats(child)
+            if (weaponGroups.length > 0) {
+                weaponGroups.forEach(wg => {
+                    const existing = model.weapons.find(w => w.name === wg.name)
+                    if (existing) {
+                        existing.count += countToAdd
+                    } else {
+                        model.weapons.push({ ...wg, count: countToAdd })
+                    }
+                })
+                return;
+            }
 
-    const isWarlord = model.extras.some(e => e.name.toLowerCase().includes("warlord"))
+            if (child.type === "upgrade") {
+                const points = getPoints(child)
+
+                // --- Structural Filter Start ---
+                const childAny = child as any;
+
+                // ดึงค่าจากโครงสร้าง JSON
+                const groupStr = (childAny.group && typeof childAny.group === 'string')
+                    ? childAny.group.toLowerCase()
+                    : "";
+
+                const typeNameStr = (childAny.typeName && typeof childAny.typeName === 'string')
+                    ? childAny.typeName.toLowerCase()
+                    : "";
+
+                const isEnhancement =
+                    // เช็คคำว่า enhancement ใน group (รองรับ Enhancements::...)
+                    groupStr.includes("enhancement") ||
+                    // เช็ค typeName
+                    typeNameStr === "enhancement" ||
+                    // เช็ค categories
+                    child.categories?.some(c => c.name?.toLowerCase().includes("enhancement"));
+                // --- Structural Filter End ---
+
+                if (isEnhancement) {
+                    model.enhancements.push({ name, points })
+                } else {
+                    if (!checkIsWarlord(child)) {
+                        const existingWargear = model.wargear.find(w => w.name === name)
+                        if (existingWargear) {
+                            existingWargear.count += countToAdd
+                        } else {
+                            model.wargear.push({ name, count: countToAdd })
+                        }
+                    }
+                }
+            }
+        })
+    }
 
     return {
-        id: modelNode.id ?? modelName,
-        name: modelName,
+        id: modelNode.id ?? "",
+        name: modelNode.name ?? "Unknown Unit",
         points: getPoints(modelNode),
+        models: [...modelsMap.values()],
+        isWarlord: unitIsWarlord,
         category: getPrimaryCategoryFromNode(modelNode),
-        models: [model],
-        isWarlord,
         stats,
         abilities,
         keywords,

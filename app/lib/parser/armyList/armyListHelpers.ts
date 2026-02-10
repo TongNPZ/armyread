@@ -1,4 +1,3 @@
-// app/lib/parser/armyList/armyListHelpers.ts
 import type { SelectionNode, Profile } from "../roster/rosterImportTypes"
 import type { ArmyListWeapon, WeaponProfile, StatItem, AbilityRule } from "./armyListTypes"
 
@@ -39,7 +38,6 @@ export function getUnitStats(node: SelectionNode): StatItem[] {
 export function getWeaponStats(weaponNode: SelectionNode): ArmyListWeapon[] {
     const profiles: WeaponProfile[] = []
 
-    // Helper ในการแปลง Profile Node เป็น WeaponProfile Object
     const parseProfile = (profile: Profile): WeaponProfile => ({
         name: profile.name ?? "Unknown",
         keywords: parseKeywords(getCharacteristic(profile, "Keywords")),
@@ -51,14 +49,12 @@ export function getWeaponStats(weaponNode: SelectionNode): ArmyListWeapon[] {
         damage: getCharacteristic(profile, "D"),
     })
 
-    // 1. หา Profile ในระดับตัวเอง (Direct Profiles)
     weaponNode.profiles?.forEach(p => {
         if (p.typeName === "Ranged Weapons" || p.typeName === "Melee Weapons") {
             profiles.push(parseProfile(p))
         }
     })
 
-    // 2. ถ้าไม่มี Profile ในตัวมันเอง ให้ลองหาในลูก (Nested Selections)
     if (profiles.length === 0 && weaponNode.selections) {
         weaponNode.selections.forEach(child => {
             child.profiles?.forEach(p => {
@@ -71,7 +67,6 @@ export function getWeaponStats(weaponNode: SelectionNode): ArmyListWeapon[] {
 
     if (profiles.length === 0) return []
 
-    // ✅ Return เป็น Array ของ ArmyListWeapon (1 ตัวอาจมีหลาย Profile)
     return [{
         name: weaponNode.name ?? "Unknown Weapon",
         count: weaponNode.number ?? 1,
@@ -81,20 +76,42 @@ export function getWeaponStats(weaponNode: SelectionNode): ArmyListWeapon[] {
 
 // --- 3. Rules Collection & Categorization ---
 
-function collectAllRules(node: SelectionNode, collected: Map<string, string>) {
-    // 1. Rules จาก Node
+// ✅ Helper ใหม่: หาคำอธิบายโดยไล่เช็ค Description -> Effect -> Ability
+function findDescription(p: Profile): string | null {
+    const fields = ["Description", "Effect", "Ability"];
+    for (const field of fields) {
+        const val = getCharacteristic(p, field);
+        if (val && val !== "-") return val;
+    }
+    return null;
+}
+
+function collectAllRules(node: SelectionNode, collected: Map<string, { description: string, typeName: string }>) {
+    // 1. Rules (Node level) -> ถือว่าเป็น Ability ทั่วไป
     node.rules?.forEach(r => {
         if (r.name && r.description) {
-            collected.set(r.name, r.description);
+            collected.set(r.name, { description: r.description, typeName: "Abilities" });
         }
     });
 
-    // 2. Abilities จาก Profiles
+    // 2. Profiles -> เช็คทุกประเภทที่ไม่ใช่ Unit/Weapon/Model
     node.profiles?.forEach(p => {
-        if (p.typeName === "Abilities") {
-            const desc = getCharacteristic(p, "Description");
+        const rawTypeName = (p as any).typeName || p.typeName || "Unknown";
+        const typeName = typeof rawTypeName === 'string' ? rawTypeName.trim() : "Unknown";
+
+        const excludedTypes = ["Unit", "Model", "Ranged Weapons", "Melee Weapons"];
+
+        if (!excludedTypes.includes(typeName)) {
+            // ✅ FIX: ใช้ฟังก์ชันหา Description ที่ฉลาดขึ้น (แก้ปัญหา "-" บัง Effect)
+            const desc = findDescription(p);
+
             if (p.name && desc) {
-                collected.set(p.name, desc);
+                // Debug: เช็คว่าเจอ Custom Rule ไหม (ดูใน Browser Console F12)
+                if (typeName !== "Abilities" && typeName !== "Wargear" && typeName !== "Rule") {
+                    console.log(`[ArmyHelpers] Found Custom Rule: "${p.name}", Type: "${typeName}", Desc: "${desc.substring(0, 20)}..."`);
+                }
+
+                collected.set(p.name, { description: desc, typeName: typeName });
             }
         }
     });
@@ -117,59 +134,87 @@ export function getAbilitiesAndKeywords(node: SelectionNode) {
         "WeaponRules": []
     }
 
-    // 1. รวบรวม Rules
-    const allRulesMap = new Map<string, string>();
+    // 1. รวบรวม Rules ทั้งหมดพร้อม TypeName
+    const allRulesMap = new Map<string, { description: string, typeName: string }>();
     collectAllRules(node, allRulesMap);
 
-    // 2. แยกหมวดหมู่
-    allRulesMap.forEach((desc, name) => {
+    // 2. แยกหมวดหมู่ (Sorting Logic)
+    allRulesMap.forEach((val, name) => {
+        const { description, typeName } = val;
         const lowerName = name.toLowerCase();
 
-        // กฎพื้นฐาน 10th Edition
+        // 2.1 Special Hardcoded Checks
+        if (lowerName.includes("invulnerable save")) {
+            abilities["Invuln"].push({ name, description });
+            return;
+        }
+        if (lowerName.startsWith("damaged:")) {
+            abilities["Damaged"].push({ name, description });
+            return;
+        }
+        if (name === "Leader" || lowerName.includes("attached unit")) {
+            abilities["Leader"].push({ name, description });
+            return;
+        }
+
+        // 2.2 Core Rules
         const coreRules = [
             "deep strike", "scouts", "infiltrators", "lone operative",
             "stealth", "fights first", "feel no pain", "deadly demise", "hover"
         ];
+        if (coreRules.some(k => lowerName.startsWith(k) || lowerName === k)) {
+            abilities["Core"].push({ name, description });
+            return;
+        }
 
-        // กฎ Faction
+        // 2.3 Faction Rules
         const factionRules = [
             "oath of moment", "synapse", "shadow in the warp",
-            "acts of faith", "orders", "waaagh!", "judgement tokens", "strands of fate"
+            "acts of faith", "orders", "waaagh!", "judgement tokens", "strands of fate",
+            "blessings of khorne"
         ];
+        if (factionRules.some(k => lowerName === k)) {
+            abilities["Faction"].push({ name, description });
+            return;
+        }
 
-        // กฎอาวุธ
+        // 2.4 Weapon Rules
         const weaponRules = [
             "anti-", "devastating wounds", "lethal hits", "sustained hits",
             "precision", "rapid fire", "assault", "heavy", "pistol",
             "blast", "indirect fire", "twin-linked", "hazardous",
             "torrent", "lance", "ignores cover", "melta", "extra attacks"
         ];
+        if (weaponRules.some(k => lowerName.startsWith(k))) {
+            abilities["WeaponRules"].push({ name, description });
+            return;
+        }
 
-        if (lowerName.includes("invulnerable save")) {
-            abilities["Invuln"].push({ name, description: desc });
-        } else if (lowerName.startsWith("damaged:")) {
-            abilities["Damaged"].push({ name, description: desc });
-        } else if (name === "Leader" || lowerName.includes("attached unit")) {
-            abilities["Leader"].push({ name, description: desc });
-        } else if (coreRules.some(k => lowerName.startsWith(k) || lowerName === k)) {
-            abilities["Core"].push({ name, description: desc });
-        } else if (factionRules.some(k => lowerName === k)) {
-            abilities["Faction"].push({ name, description: desc });
-        } else if (weaponRules.some(k => lowerName.startsWith(k))) {
-            abilities["WeaponRules"].push({ name, description: desc });
+        // 2.5 ✅ CUSTOM CATEGORIES
+        if (typeName &&
+            typeName !== "Abilities" &&
+            typeName !== "Rule" &&
+            typeName !== "Wargear" &&
+            typeName !== "Unknown"
+        ) {
+            if (!abilities[typeName]) {
+                abilities[typeName] = [];
+            }
+            abilities[typeName].push({ name, description });
         } else {
-            abilities["Abilities"].push({ name, description: desc });
+            abilities["Abilities"].push({ name, description });
         }
     });
 
-    // 3. Keywords
+    // 3. Keywords Logic
     const allKeywords = node.categories?.map(c => c.name ?? "") ?? []
 
     const factionKeywords = allKeywords.filter(k =>
         k.startsWith("Faction:") ||
         k.includes("Adeptus") || k.includes("Heretic") ||
         k.includes("Aeldari") || k.includes("Tyranids") || k.includes("T'au") ||
-        k.includes("Imperium") || k.includes("Chaos") || k.includes("Xenos")
+        k.includes("Imperium") || k.includes("Chaos") || k.includes("Xenos") ||
+        k.includes("World Eaters") || k.includes("Votann")
     ).map(k => k.replace("Faction: ", ""))
 
     const keywords = allKeywords.filter(k =>
