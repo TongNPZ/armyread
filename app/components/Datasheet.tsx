@@ -5,47 +5,35 @@ import {
   WeaponProfile,
 } from "../lib/parser/armyList/armyListTypes";
 import { getFactionColor } from "../lib/constants/factionColors";
-
+import { GiCrosshair, GiCrossedSwords, GiMineExplosion } from "react-icons/gi";
+import { BsShield } from "react-icons/bs";
 // ==========================================
 // 1. ICONS
 // ==========================================
 
+// ... (ส่วนอื่นๆ ของไฟล์เหมือนเดิม) ...
+
+// ==========================================
+// 1. ICONS (เปลี่ยนมาใช้ Component ของ React Icons)
+// ==========================================
+
 const RangedIcon = () => (
-  <svg
-    viewBox="0 0 512 512"
-    fill="currentColor"
-    className="w-5 h-5 inline-block mr-1.5 opacity-90"
-  >
-    {/* Icon: Reticule (Target) */}
-    <path d="M256 16C123.45 16 16 123.45 16 256s107.45 240 240 240 240-107.45 240-240S388.55 16 256 16zm0 34c113.7 0 206 92.3 206 206s-92.3 206-206 206S50 369.7 50 256 142.3 50 256 50zm0 38c-92.8 0-168 75.2-168 168s75.2 168 168 168 168-75.2 168-168S348.8 88 256 88zm0 18c82.76 0 150 67.24 150 150s-67.24 150-150 150S106 338.76 106 256 173.24 106 256 106zm-10 24v116h-97.6c5.58-45.72 39.15-82.6 84.44-91.86l13.16-24.14zm20 0l13.16 24.14C323.25 163.4 356.82 200.28 362.4 246h-96.4V130zm-10 136h116c-5.58 45.72-39.15 82.6-84.44 91.86l-13.16 24.14V266zm-20 0v116l-13.16-24.14c-45.29-9.26-78.86-46.14-84.44-91.86H236z" />
-  </svg>
+  // ไม่ต้องมี path ยาวๆ แล้ว แค่เรียก Component และใส่ Class
+  <GiCrosshair className="w-5 h-5 inline-block mr-1.5 opacity-90" />
 );
 
 const MeleeIcon = () => (
-  <svg
-    viewBox="0 0 512 512"
-    fill="currentColor"
-    className="w-5 h-5 inline-block mr-1.5 opacity-90"
-  >
-    {/* Icon: Sharp Sword (ดาบ) */}
-    <path d="M499.5 58.7c-29-37.4-78.1-55.8-124.6-46.7-27.1 5.3-51.7 18.6-70.5 37.4L37.1 316.7c-21.7 21.7-41 57.7-18.7 80 22.3 22.3 58.3 3 80-18.7L365.7 110.7c18.9-18.9 32.1-43.4 37.4-70.5 9.1-46.5-9.3-95.6-46.7-124.6l-8.5-6.6c-7.1-5.5-17.5-1.9-19.6 6.9-3.9 16.3-14.7 30.5-29.6 38.6-14.9 8.1-32.6 8.9-48.1 2.2l-23.7-10.2c-5.8-2.5-12.2 .7-13.8 6.9l-6.3 23.4c-4.9 18.1-17.9 32.7-35.2 39.5L149.3 25.1c-6.8 2.7-9.5 10.6-5.8 16.9l196.9 337.8c-10 16-16.7 34.4-19 53.7-3.9 32.4 4.8 65 24.3 89.9 18.2 23.2 44.8 38.5 73.8 42.4 5.9 .8 11.6-3.2 12.6-9.1 .9-5.3-1.8-10.6-6.4-12.8-18.8-9-32.9-25.5-39.3-45.6-7.8-24.4-4-51.2 10.5-72.9l46.2-69.3c5-7.5 4.5-17.4-1.3-24.4l-7.7-9.3c-6.2-7.5-6.2-18.2 0-25.7l7.7-9.3c5.8-7 6.3-16.9 1.3-24.4l-38.4-57.6c-6.3-9.4-4.2-22.1 4.7-28.8l7.6-5.7c16.3-12.2 37.6-12.2 53.9 0l7.6 5.7c8.9 6.7 21.6 4.7 27.9-4.7l2.8-4.2c5.5-8.3 1.9-19.6-7-23z" />
-  </svg>
+  // รูปดาบจะเต็มกรอบและจัดกลางให้อัตโนมัติ
+  <GiCrossedSwords className="w-5 h-5 inline-block mr-1.5 opacity-90" />
 );
 
 const InvulnIcon = () => (
-  <svg viewBox="0 0 512 512" fill="currentColor" className="w-5 h-5">
-    {/* Shield Icon */}
-    <path d="M256 0c4.6 0 9.2 1 13.4 2.9L457.7 82.8c22 9.3 38.4 31 38.3 57.2c-.5 99.2-27.4 186.9-69.7 254.8c-37.3 59.8-88.7 99.8-163.4 116.4c-4.5 1-9.2 1-13.7 0c-74.7-16.6-126.1-56.6-163.4-116.4C45.3 326.9 18.5 239.3 18 140c-.1-26.2 16.3-47.9 38.3-57.2L242.7 2.9C246.8 1 251.4 0 256 0z" />
-  </svg>
+  <BsShield className="w-5 h-5" />
 );
 
 const DamagedIcon = () => (
-  <svg viewBox="0 0 512 512" fill="currentColor" className="w-5 h-5">
-    {/* Explosion Icon */}
-    <path d="M403.4 32.4l-89.9 83.3-22.3-88.4c-3.1-12.2-20.6-14.2-26.5-3L208 132.6 116.4 50.1c-10-9-26.2-3.8-28.7 9.4L73 133 11 118.6c-13.4-3.1-23.7 11.2-15.7 21.8l63.9 84.8-83.3 22.3c-12.2 3.1-14.2 20.6-3 26.5L68.6 304 6.9 375.6c-13.9 16.2 .5 40.5 21.4 36L108 396.9 93.6 481c-3.1 13.4 11.2 23.7 21.8 15.7l84.8-63.9 22.3 83.3c3.3 12.2 20.6 14.2 26.5 3L304 423.4l82.6 62.3c16.2 13.9 40.5-.5 36-21.4L406.9 384l84.1 14.4c13.4 3.1 23.7-11.2 15.7-21.8l-63.9-84.8 83.3-22.3c12.2-3.3 14.2-20.6 3-26.5L443.4 208 505.1 116.4c13.9-16.2-.5-40.5-21.4-36L404 95.1 418.4 21c3.1-13.4-11.2-23.7-21.8-15.7l-83.2 27.1z" />
-  </svg>
+  <GiMineExplosion className="w-5 h-5" />
 );
-
 // ==========================================
 // 2. INTERACTIVE COMPONENT
 // ==========================================
@@ -265,7 +253,7 @@ export default function Datasheet({
       className={`flex flex-col sm:flex-row sm:items-center px-3 py-2 ${striped ? "bg-zinc-50" : "bg-white"} hover:bg-zinc-100 transition-colors border-b border-zinc-100 last:border-0`}
     >
       <div className="flex-1 mb-2 sm:mb-0 pr-2">
-        <div className="font-bold text-sm uppercase leading-tight text-zinc-900 flex items-center gap-1.5">
+        <div className="font-bold text-sm leading-tight text-zinc-900 flex items-center gap-1.5">
           {profile.displayName}
           {profile.count > 1 && (
             <span className="text-zinc-500 normal-case text-xs">
@@ -384,7 +372,7 @@ export default function Datasheet({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-zinc-900 text-white p-3 flex justify-between items-center border-b-2 border-red-600">
-              <h3 className="font-bold uppercase text-lg text-yellow-400">
+              <h3 className="font-bold text-lg text-yellow-400">
                 {selectedRule.name}
               </h3>
               <button
@@ -423,7 +411,7 @@ export default function Datasheet({
                   {unit.name}
                 </h1>
                 {unit.isWarlord && (
-                  <span className="text-xs font-bold px-2 py-0.5 bg-yellow-400 text-black uppercase shadow-sm">
+                  <span className="text-xs font-bold px-2 py-0.5 text-zinc-100 text-black">
                     Warlord
                   </span>
                 )}
@@ -440,7 +428,7 @@ export default function Datasheet({
           <div className="flex flex-wrap items-end gap-2 sm:gap-4">
             {sortedStats.map((stat, idx) => (
               <div key={idx} className="flex flex-col items-center gap-0.5">
-                <div className="text-[10px] sm:text-xs font-bold uppercase leading-none tracking-wide text-white/90 shadow-sm">
+                <div className="text-[10px] sm:text-xs font-bold leading-none tracking-wide text-white/90 shadow-sm">
                   {stat.name}
                 </div>
                 <div className="flex items-center justify-center bg-white text-black w-10 h-10 sm:w-12 sm:h-12 shadow-md border border-zinc-400/50 relative overflow-hidden">
@@ -469,7 +457,7 @@ export default function Datasheet({
             {rangedWeapons.length > 0 && (
               <div className="mb-0">
                 <div
-                  className="flex items-center justify-between px-3 py-1.5 text-white text-sm font-bold uppercase border-b border-white/10"
+                  className="flex items-center justify-between px-3 py-1.5 text-white text-sm font-bold border-b border-white/10"
                   style={{ backgroundColor: primaryColor }}
                 >
                   <span className="flex items-center gap-2">
@@ -675,10 +663,10 @@ export default function Datasheet({
                   className="flex justify-between items-center text-white px-3 py-1.5"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  <span className="text-xs font-bold uppercase tracking-wider truncate mr-2">
+                  <span className="text-xm font-bold uppercase tracking-wider truncate mr-2">
                     {rule.name}
                   </span>
-                  <div className="flex items-center gap-1 bg-black/20 px-2 py-0.5 shrink-0">
+                  <div className="flex items-center gap-1 px-2 py-0.5 shrink-0">
                     <span className="opacity-90">
                       <DamagedIcon />
                     </span>
@@ -700,7 +688,7 @@ export default function Datasheet({
                 className="flex justify-between items-center text-white px-3 py-2 shadow-sm border border-white/10 mt-2"
                 style={{ backgroundColor: primaryColor }}
               >
-                <span className="text-xs font-bold uppercase tracking-wider truncate mr-2">
+                <span className="text-xm font-bold uppercase tracking-wider truncate mr-2">
                   {/* ถ้าชื่อมีคำว่า Invuln/Invulnerable ให้แสดงว่า Invulnerable Save ถ้าไม่ใช่ (เช่น Storm Shield) ให้แสดงชื่อมัน */}
                   {rule.name.toLowerCase().includes("invulnerable") ||
                     rule.name === "Invuln"
@@ -708,7 +696,7 @@ export default function Datasheet({
                     : rule.name.toUpperCase()}
                 </span>
 
-                <div className="flex items-center gap-2 bg-black/20 px-2 py-1 shrink-0">
+                <div className="flex items-center gap-2 px-2 py-1 shrink-0">
                   <span className="opacity-90">
                     <InvulnIcon />
                   </span>
@@ -724,13 +712,13 @@ export default function Datasheet({
           <div className="mt-auto">
             <div className="bg-[#d4d4d4] p-2 px-3 border-t border-zinc-300">
               <div className="flex flex-wrap gap-1">
-                <span className="font-bold text-[10px] uppercase text-zinc-500 py-0.5">
+                <span className="font-bold text-[10px] text-zinc-500 py-0.5">
                   Faction:
                 </span>
                 {unit.factionKeywords?.map((kw, i) => (
                   <span
                     key={i}
-                    className="text-[10px] font-bold uppercase bg-zinc-600 text-white px-1.5 py-0.5"
+                    className="text-[10px] font-bold bg-zinc-600 text-white px-1.5 py-0.5"
                   >
                     {kw}
                   </span>

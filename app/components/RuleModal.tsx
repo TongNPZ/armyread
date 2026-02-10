@@ -34,6 +34,9 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
                     >
                         {/* 1. Header (Sticky) */}
                         <div className="flex justify-between items-center p-5 border-b border-zinc-800 bg-zinc-900 sticky top-0 z-10">
+                            {/* <h1 className="text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-2">
+                                        {detachment.name}
+                                    </h1> */}
                             <h2 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
                                 <span className={`w-2 h-6 rounded-full ${openRule.type === 'detachment' ? 'bg-purple-600' : 'bg-red-600'}`}></span>
                                 {openRule.type === 'army' ? 'Army Rule' : 'Detachment Rule'}
@@ -54,7 +57,7 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
                                     .map(rule => (
                                         <div key={rule.id} className="space-y-6">
                                             <div>
-                                                <h1 className="text-2xl font-black uppercase text-white mb-4 tracking-tight">
+                                                <h1 className="text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-2">
                                                     {rule.name}
                                                 </h1>
                                                 <div className="text-base text-zinc-300 leading-relaxed whitespace-pre-line font-sans">

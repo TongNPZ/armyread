@@ -59,7 +59,7 @@ export default function ArmyListView({
                       {unit.name}
                     </h4>
                     {unit.isWarlord && (
-                      <span className="inline-block mt-1.5 text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 rounded shadow-sm uppercase tracking-wider">
+                      <span className="inline-block mt-1.5 text-[10px] font-bold bg-red-600 text-white px-2 py-0.5 shadow-sm uppercase tracking-wider">
                         Warlord
                       </span>
                     )}
