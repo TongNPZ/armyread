@@ -8,7 +8,7 @@ import ArmyListView from "./components/ArmyListView";
 import DatasheetView from "./components/DatasheetView";
 import RuleModal from "./components/RuleModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArmyListUnit } from "./lib/parser/armyList/armyListTypes"; // ✅ เพิ่ม Import Type
+import { ArmyListUnit } from "./lib/parser/armyList/armyListTypes";
 
 export default function Page() {
   const {
@@ -22,31 +22,35 @@ export default function Page() {
     setOpenRule,
     handleUpload,
     handleClear,
-    // groupedUnits, // ❌ ไม่ต้องใช้แล้ว (ArmyListView จัดการเอง)
-    // orderedCategories, // ❌ ไม่ต้องใช้แล้ว
     featuredUnit,
     otherUnits,
-    units, // ✅ ใช้ตัวนี้ส่งให้ ArmyListView
+    units,
   } = useArmyRoster();
 
-  // ✅ เพิ่มฟังก์ชันนี้: เมื่อเลือก Unit จากหน้า List ให้ไปเปิด Datasheet
   const handleSelectUnit = (unit: ArmyListUnit) => {
-    setSearchTerm(unit.name); // ตั้งค่าคำค้นหาเป็นชื่อ Unit
-    setViewMode("datasheet"); // เปลี่ยนหน้าเป็น Datasheet
+    setSearchTerm(unit.name);
+    setViewMode("datasheet");
   };
 
-  // 1. Loading State
+  // 1. Loading State (จับมาไว้ตรงกลางด้วย)
   if (!isLoaded) {
     return (
-      <main className="mx-auto max-w-screen-xl px-6 py-20 text-center bg-zinc-950 text-gray-100">
-        <div className="animate-pulse text-zinc-500">Loading local data...</div>
+      <main className="flex items-center justify-center min-h-screen bg-zinc-950 px-6 py-20 text-center text-gray-100">
+        <div className="animate-pulse text-zinc-500 text-lg">Loading local data...</div>
       </main>
     );
   }
 
-  // 2. Empty State (No Data)
+  // 2. Empty State (จับมาไว้ตรงกลางหน้าจอเป๊ะๆ)
   if (!parsed) {
-    return <EmptyState onUpload={handleUpload} />;
+    return (
+      // 🟢 ใช้ flex, items-center และ justify-center เพื่อดัน EmptyState ลงมาตรงกลาง
+      <main className="flex flex-col items-center justify-center min-h-screen bg-zinc-950 p-6">
+        <div className="w-full max-w-xl">
+          <EmptyState onUpload={handleUpload} />
+        </div>
+      </main>
+    );
   }
 
   // 3. Main Content
@@ -74,7 +78,6 @@ export default function Page() {
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.2 }}
           >
-            {/* ✅ แก้ไขการเรียกใช้ ArmyListView ให้ถูกต้อง */}
             <ArmyListView
               units={units}
               faction={parsed.meta.faction}
@@ -96,7 +99,7 @@ export default function Page() {
               featuredUnit={featuredUnit}
               otherUnits={otherUnits}
               factionName={parsed.meta.faction}
-              detachmentName={parsed.detachment?.name || ""} // 👈 แก้ตรงนี้ครับ
+              detachmentName={parsed.detachment?.name || ""}
             />
           </motion.div>
         )}
@@ -109,6 +112,14 @@ export default function Page() {
         armyRules={parsed.armyRules}
         detachment={parsed.detachment}
       />
+
+      {/* Footer อ้างอิง Wahapedia */}
+      <footer className="w-full text-center py-8 mt-12 border-t border-zinc-800/50">
+        <p className="text-zinc-500 text-sm flex items-center justify-center gap-1.5">
+          <svg className="w-4 h-4 text-zinc-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 22l10-10L12 2zM2 12l10 10V2L2 12z" /></svg>
+          Powered by <a href="https://wahapedia.ru/" target="_blank" rel="noopener noreferrer" className="text-zinc-400 font-bold hover:text-yellow-500 transition-colors">Wahapedia</a>
+        </p>
+      </footer>
     </main>
   );
 }

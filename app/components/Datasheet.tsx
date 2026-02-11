@@ -1,119 +1,16 @@
 // app/components/Datasheet.tsx
 import { useState, useMemo } from "react";
-import {
-  ArmyListUnit,
-  WeaponProfile,
-} from "../lib/parser/armyList/armyListTypes";
+import { ArmyListUnit } from "../lib/parser/armyList/armyListTypes";
 import { getFactionColor } from "../lib/constants/factionColors";
-import { GiCrosshair, GiCrossedSwords, GiMineExplosion } from "react-icons/gi";
-import { BsShield } from "react-icons/bs";
-// ==========================================
-// 1. ICONS
-// ==========================================
 
-// ... (ส่วนอื่นๆ ของไฟล์เหมือนเดิม) ...
+// ✅ 1. Import Component ที่แยกออกไป
+import { RangedIcon, MeleeIcon, InvulnIcon, DamagedIcon } from "./datasheet/DatasheetIcons";
+import RuleInteractive from "./datasheet/RuleInteractive";
+import WeaponProfileRow, { ProcessedWeapon } from "./datasheet/WeaponProfileRow";
 
 // ==========================================
-// 1. ICONS (เปลี่ยนมาใช้ Component ของ React Icons)
+// MAIN COMPONENT
 // ==========================================
-
-const RangedIcon = () => (
-  // ไม่ต้องมี path ยาวๆ แล้ว แค่เรียก Component และใส่ Class
-  <GiCrosshair className="w-5 h-5 inline-block mr-1.5 opacity-90" />
-);
-
-const MeleeIcon = () => (
-  // รูปดาบจะเต็มกรอบและจัดกลางให้อัตโนมัติ
-  <GiCrossedSwords className="w-5 h-5 inline-block mr-1.5 opacity-90" />
-);
-
-const InvulnIcon = () => (
-  <BsShield className="w-5 h-5" />
-);
-
-const DamagedIcon = () => (
-  <GiMineExplosion className="w-5 h-5" />
-);
-// ==========================================
-// 2. INTERACTIVE COMPONENT
-// ==========================================
-
-interface RuleInteractiveProps {
-  name: string;
-  description?: string;
-  color?: string;
-  isWeaponRule?: boolean;
-  onClick: (name: string, desc: string) => void;
-  ruleMap: Record<string, string>;
-}
-
-const RuleInteractive = ({
-  name,
-  description,
-  color,
-  isWeaponRule,
-  onClick,
-  ruleMap,
-}: RuleInteractiveProps) => {
-  const displayName = name.replace(/^\[|\]$/g, "").trim();
-
-  // ค้นหาคำอธิบายจาก Map
-  let finalDesc = description;
-  if (!finalDesc || finalDesc === "-" || finalDesc.length < 5) {
-    if (ruleMap[displayName]) {
-      finalDesc = ruleMap[displayName];
-    } else {
-      const key = Object.keys(ruleMap).find(
-        (k) =>
-          displayName.toLowerCase().startsWith(k.toLowerCase()) ||
-          k.toLowerCase().startsWith(displayName.toLowerCase()),
-      );
-      if (key) finalDesc = ruleMap[key];
-    }
-  }
-
-  if (!finalDesc) finalDesc = "Description not found in roster.";
-
-  const tooltipPositionClass = isWeaponRule
-    ? "left-0"
-    : "left-1/2 -translate-x-1/2";
-
-  return (
-    <span
-      className={`group relative cursor-pointer inline-block transition-colors duration-200
-                ${isWeaponRule ? "" : "border-b border-dotted border-zinc-500 hover:border-zinc-800"}
-            `}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick(displayName, finalDesc!);
-      }}
-    >
-      <span
-        className={`font-bold ${isWeaponRule ? "text-[10px] uppercase" : "text-xs font-bold uppercase text-zinc-600"} group-hover:text-black`}
-        style={color && isWeaponRule ? { color: color } : {}}
-      >
-        {isWeaponRule ? displayName : displayName}
-      </span>
-
-      <span
-        className={`invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-full mb-2 w-64 bg-zinc-900 text-white text-xs p-3 shadow-xl z-50 pointer-events-none text-left ${tooltipPositionClass}`}
-      >
-        <span className="font-bold block mb-1 border-b border-zinc-700 pb-1 text-yellow-400 text-sm">
-          {displayName}
-        </span>
-        <span className="leading-snug">{finalDesc}</span>
-        {!isWeaponRule && (
-          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-900"></span>
-        )}
-      </span>
-    </span>
-  );
-};
-
-// ==========================================
-// 3. MAIN COMPONENT
-// ==========================================
-
 export default function Datasheet({
   unit,
   faction,
@@ -147,7 +44,6 @@ export default function Datasheet({
 
   const primaryColor = getFactionColor(faction);
 
-  // Data Processing
   const models = unit.models || [];
   const stats = unit.stats || [];
   const sortedStats = [...stats].sort(
@@ -155,15 +51,6 @@ export default function Datasheet({
       ["M", "T", "SV", "W", "LD", "OC"].indexOf(a.name) -
       ["M", "T", "SV", "W", "LD", "OC"].indexOf(b.name),
   );
-
-  // ==========================================
-  // 🛠️ WEAPON LOGIC (Flattened)
-  // ==========================================
-
-  interface ProcessedWeapon extends WeaponProfile {
-    displayName: string;
-    count: number;
-  }
 
   const processWeapons = (
     rangeFilter: (r: string) => boolean,
@@ -220,13 +107,10 @@ export default function Datasheet({
   const rangedWeapons = processWeapons((r) => r !== "Melee");
   const meleeWeapons = processWeapons((r) => r === "Melee");
 
-  // ==========================================
-
   const handleRuleClick = (name: string, description: string) => {
     setSelectedRule({ name, description });
   };
 
-  // --- SPLIT LOGIC ---
   const standardCategories = [
     "Core",
     "Faction",
@@ -242,89 +126,6 @@ export default function Datasheet({
     (cat) => !standardCategories.includes(cat),
   );
 
-  const WeaponProfileRow = ({
-    profile,
-    striped = false,
-  }: {
-    profile: ProcessedWeapon;
-    striped?: boolean;
-  }) => (
-    <div
-      className={`flex flex-col sm:flex-row sm:items-center px-3 py-2 ${striped ? "bg-zinc-50" : "bg-white"} hover:bg-zinc-100 transition-colors border-b border-zinc-100 last:border-0`}
-    >
-      <div className="flex-1 mb-2 sm:mb-0 pr-2">
-        <div className="font-bold text-sm leading-tight text-zinc-900 flex items-center gap-1.5">
-          {profile.displayName}
-          {profile.count > 1 && (
-            <span className="text-zinc-500 normal-case text-xs">
-              (x{profile.count})
-            </span>
-          )}
-        </div>
-        {/* Keywords */}
-        {profile.keywords && profile.keywords.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-y-1 text-[10px] text-zinc-500 font-bold">
-            <span className="mr-0.5">[</span>
-            {profile.keywords.map((kw, i) => (
-              <span key={i} className="flex items-center">
-                <RuleInteractive
-                  name={kw}
-                  color={primaryColor}
-                  isWeaponRule={true}
-                  onClick={handleRuleClick}
-                  ruleMap={ruleMap}
-                />
-                {i < profile.keywords.length - 1 && (
-                  <span className="mr-1 text-zinc-400">,</span>
-                )}
-              </span>
-            ))}
-            <span className="ml-0.5">]</span>
-          </div>
-        )}
-      </div>
-      <div className="grid grid-cols-6 sm:flex sm:gap-0 text-center text-sm w-full sm:w-[260px] font-bold text-zinc-700 shrink-0 tabular-nums">
-        <span className="flex-1 flex flex-col sm:block border-r sm:border-0 border-zinc-200">
-          <span className="sm:hidden text-[10px] font-bold text-zinc-400">
-            RNG
-          </span>
-          {profile.range}
-        </span>
-        <span className="flex-1 flex flex-col sm:block border-r sm:border-0 border-zinc-200">
-          <span className="sm:hidden text-[10px] font-bold text-zinc-400">
-            A
-          </span>
-          {profile.attacks}
-        </span>
-        <span className="flex-1 flex flex-col sm:block border-r sm:border-0 border-zinc-200">
-          <span className="sm:hidden text-[10px] font-bold text-zinc-400">
-            {profile.range === "Melee" ? "WS" : "BS"}
-          </span>
-          {profile.skill}
-        </span>
-        <span className="flex-1 flex flex-col sm:block border-r sm:border-0 border-zinc-200">
-          <span className="sm:hidden text-[10px] font-bold text-zinc-400">
-            S
-          </span>
-          {profile.strength}
-        </span>
-        <span className="flex-1 flex flex-col sm:block border-r sm:border-0 border-zinc-200">
-          <span className="sm:hidden text-[10px] font-bold text-zinc-400">
-            AP
-          </span>
-          {profile.ap}
-        </span>
-        <span className="flex-1 flex flex-col sm:block">
-          <span className="sm:hidden text-[10px] font-bold text-zinc-400">
-            D
-          </span>
-          {profile.damage}
-        </span>
-      </div>
-    </div>
-  );
-
-  // Filter Abilities to Separate 'Damaged' rules
   const allAbilities = unit.abilities?.["Abilities"] || [];
   const damagedRules =
     unit.abilities?.["Damaged"] ||
@@ -333,15 +134,12 @@ export default function Datasheet({
     (a) => !a.name.includes("Wargear") && !a.name.includes("Damaged:"),
   );
 
-  // 🛡️ Logic for Invuln: PRIORITY SYSTEM
   const baseInvulns = unit.abilities?.["Invuln"] || [];
   let displayInvulns = [];
 
   if (baseInvulns.length > 0) {
-    // 1. ถ้ามี Base Invuln (เช่น Azrael) ให้ใช้ Base เป็นหลัก
     displayInvulns = baseInvulns;
   } else {
-    // 2. ถ้าไม่มี Base Invuln (เช่น Vanguard Vets) ให้กวาดหาจาก Wargear/Abilities
     const potentialSources = [
       ...(unit.abilities?.["Wargear"] || []),
       ...(unit.abilities?.["Abilities"] || []),
@@ -349,19 +147,17 @@ export default function Datasheet({
 
     const extraInvulns = potentialSources.filter((rule) => {
       const desc = rule.description.toLowerCase();
-      // หาคำว่า invulnerable และตัวเลข save (เช่น 4+)
       return desc.includes("invulnerable") && /\d+\+/.test(desc);
     });
 
-    // กรองซ้ำออก (เผื่อมีหลายชิ้นให้ผลเหมือนกัน)
     displayInvulns = extraInvulns.filter(
       (v, i, a) => a.findIndex((t) => t.name === v.name) === i,
     );
   }
 
   return (
-    <div className="w-full bg-white text-zinc-900 shadow-xl font-sans mb-4 border-2 border-zinc-800 relative overflow-hidden">
-      {/* MODAL */}
+    <div className="w-full bg-white text-zinc-900 shadow-xl font-sans mb-4 border-2 border-zinc-800 relative">
+      {/* MODAL (ยังเก็บไว้เผื่อเล่นในมือถือแล้วจิ้ม) */}
       {selectedRule && (
         <div
           className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
@@ -411,7 +207,7 @@ export default function Datasheet({
                   {unit.name}
                 </h1>
                 {unit.isWarlord && (
-                  <span className="text-xs font-bold px-2 py-0.5 text-zinc-100 text-black">
+                  <span className="text-xs font-bold px-2 py-0.5 bg-white text-black rounded-sm shadow-sm">
                     Warlord
                   </span>
                 )}
@@ -450,20 +246,20 @@ export default function Datasheet({
 
       {/* BODY */}
       <div className="flex flex-col lg:flex-row min-h-[400px]">
-        {/* LEFT: WEAPONS & SPECIAL ABILITIES (OPTIONS) */}
+        {/* LEFT: WEAPONS & SPECIAL ABILITIES */}
         <div className="lg:w-[65%] flex flex-col border-b lg:border-b-0 lg:border-r-2 border-zinc-300">
           <div className="flex-grow">
             {/* RANGED */}
             {rangedWeapons.length > 0 && (
               <div className="mb-0">
                 <div
-                  className="flex items-center justify-between px-3 py-1.5 text-white text-sm font-bold border-b border-white/10"
+                  className="flex items-center justify-between px-3 py-1.5 text-white text-[13px] font-bold border-b border-white/10"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 uppercase tracking-wide">
                     <RangedIcon /> Ranged Weapons
                   </span>
-                  <div className="hidden sm:flex gap-0 text-center text-xs font-bold w-[260px] opacity-90">
+                  <div className="hidden sm:flex gap-0 text-center text-xs font-bold w-[260px] opacity-90 uppercase">
                     <span className="flex-1">Range</span>
                     <span className="flex-1">A</span>
                     <span className="flex-1">BS</span>
@@ -478,6 +274,9 @@ export default function Datasheet({
                       key={idx}
                       profile={w}
                       striped={idx % 2 !== 0}
+                      primaryColor={primaryColor}
+                      ruleMap={ruleMap}
+                      onRuleClick={handleRuleClick}
                     />
                   ))}
                 </div>
@@ -488,13 +287,13 @@ export default function Datasheet({
             {meleeWeapons.length > 0 && (
               <div className="mb-0 border-t-4 border-zinc-300">
                 <div
-                  className="flex items-center justify-between px-3 py-1.5 text-white text-sm font-bold uppercase border-b border-white/10"
+                  className="flex items-center justify-between px-3 py-1.5 text-white text-[13px] font-bold uppercase border-b border-white/10 tracking-wide"
                   style={{ backgroundColor: primaryColor }}
                 >
                   <span className="flex items-center gap-2">
                     <MeleeIcon /> Melee Weapons
                   </span>
-                  <div className="hidden sm:flex gap-0 text-center text-xs font-bold w-[260px] opacity-90">
+                  <div className="hidden sm:flex gap-0 text-center text-xs font-bold w-[260px] opacity-90 uppercase">
                     <span className="flex-1">Range</span>
                     <span className="flex-1">A</span>
                     <span className="flex-1">WS</span>
@@ -509,33 +308,36 @@ export default function Datasheet({
                       key={idx}
                       profile={w}
                       striped={idx % 2 !== 0}
+                      primaryColor={primaryColor}
+                      ruleMap={ruleMap}
+                      onRuleClick={handleRuleClick}
                     />
                   ))}
                 </div>
               </div>
             )}
 
-            {/* UNIT SPECIAL ABILITIES (Left Side - Options) */}
+            {/* UNIT SPECIAL ABILITIES */}
             {leftSideCategories.length > 0 && (
-              <div className="mt-2">
+              <div className="mt-3 px-2 pb-2">
                 {leftSideCategories.map((cat, cIdx) => (
                   <div
                     key={cIdx}
-                    className="mb-3 border border-zinc-400 bg-zinc-50 overflow-hidden"
+                    className="mb-3 border border-zinc-300 bg-white shadow-sm"
                   >
                     <div
-                      className="text-white px-3 py-1 text-sm font-bold uppercase tracking-wider"
+                      className="text-white px-3 py-1 text-xs font-bold uppercase tracking-wider"
                       style={{ backgroundColor: primaryColor }}
                     >
                       {cat}
                     </div>
-                    <div className="p-3 text-xs text-zinc-800 leading-relaxed">
+                    <div className="p-3 text-[13px] sm:text-[14px] text-zinc-800 leading-relaxed">
                       {unit.abilities![cat].map((rule, rIdx) => (
                         <div
                           key={rIdx}
                           className="mb-2 last:mb-0 pl-3 relative"
                         >
-                          <span className="absolute left-0 top-0 font-bold text-zinc-500">
+                          <span className="absolute left-0 top-0 font-bold text-zinc-400">
                             •
                           </span>
                           <strong className="text-black font-bold uppercase">
@@ -553,30 +355,37 @@ export default function Datasheet({
 
           {/* KEYWORDS FOOTER */}
           <div className="mt-auto">
-            <div className="bg-[#bfbfbf] p-2 px-3 border-t border-zinc-400 min-h-[32px]">
-              <div className="flex flex-wrap gap-1 text-[10px] uppercase font-bold text-zinc-700 leading-tight">
-                <span className="text-zinc-500 mr-1">Keywords:</span>
-                {unit.keywords?.join(", ")}
+            <div className="bg-[#e4e4e4] p-2.5 px-3 border-t border-zinc-400">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-bold text-[11px] text-zinc-600 uppercase tracking-wide">
+                  Faction:
+                </span>
+                {unit.factionKeywords?.map((kw, i) => (
+                  <span
+                    key={i}
+                    className="text-[10px] font-bold bg-zinc-700 text-white px-2 py-0.5 rounded-sm uppercase tracking-wider"
+                  >
+                    {kw}
+                  </span>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
         {/* RIGHT: ABILITIES */}
-        <div className="lg:w-[35%] flex flex-col bg-[#e8e9eb]">
+        <div className="lg:w-[35%] flex flex-col bg-[#f4f4f5]">
           <div
-            className="px-3 py-1.5 text-white text-sm font-bold uppercase shadow-sm"
+            className="px-3 py-1.5 text-white text-[13px] tracking-wide font-bold uppercase shadow-sm"
             style={{ backgroundColor: primaryColor }}
           >
             Abilities
           </div>
-          <div className="p-2 space-y-2 flex-grow text-sm">
-            {" "}
-            {/* Reduced spacing */}
+          <div className="p-2.5 space-y-2.5 flex-grow text-[13px] sm:text-[14px]">
             {/* CORE */}
             {unit.abilities?.["Core"]?.length ? (
               <div className="pb-3 border-b border-zinc-300">
-                <span className="font-bold text-zinc-500 uppercase text-[10px] mr-2">
+                <span className="font-black text-zinc-500 uppercase text-[11px] mr-2">
                   CORE:
                 </span>
                 {unit.abilities["Core"].map((r, i) => (
@@ -597,7 +406,7 @@ export default function Datasheet({
             {/* FACTION */}
             {unit.abilities?.["Faction"]?.length ? (
               <div className="pb-3 border-b border-zinc-300">
-                <span className="font-bold text-zinc-500 uppercase text-[10px] mr-2">
+                <span className="font-black text-zinc-500 uppercase text-[11px] mr-2">
                   FACTION:
                 </span>
                 {unit.abilities["Faction"].map((r, i) => (
@@ -615,30 +424,30 @@ export default function Datasheet({
                 ))}
               </div>
             ) : null}
-            {/* STANDARD ABILITIES (ไม่รวม Damaged) */}
+            {/* STANDARD ABILITIES */}
             {standardAbilities.map((rule, rIdx) => (
               <div
                 key={rIdx}
-                className="bg-white p-2 shadow-sm border border-zinc-200 mt-1.5"
+                className="bg-white p-2.5 shadow-sm border border-zinc-200 mt-1.5"
               >
-                <div className="font-bold text-zinc-900 text-sm">
+                <div className="font-bold text-zinc-900 text-[13px] sm:text-[14px] uppercase tracking-wide">
                   {rule.name}
                 </div>
-                <div className="text-xs text-zinc-600 leading-snug whitespace-pre-line mt-1">
+                <div className="text-[13px] sm:text-[14px] text-zinc-700 leading-relaxed whitespace-pre-line mt-1.5">
                   {rule.description}
                 </div>
               </div>
             ))}
             {/* LEADER */}
             {unit.abilities?.["Leader"]?.length ? (
-              <div className="pt-2 border-t border-zinc-300 mt-2">
-                <div className="font-bold text-[10px] uppercase text-zinc-500 mb-1">
+              <div className="pt-2 border-t border-zinc-300 mt-3">
+                <div className="font-black text-[11px] uppercase text-zinc-500 mb-1.5">
                   Leader / Attached
                 </div>
                 {unit.abilities["Leader"].map((rule, rIdx) => (
-                  <div key={rIdx} className="text-xs bg-zinc-200 p-2">
-                    <div className="font-bold mb-1">{rule.name}</div>
-                    <ul className="list-disc pl-4 space-y-0.5 text-zinc-700">
+                  <div key={rIdx} className="text-[13px] sm:text-[14px] bg-zinc-200/70 border border-zinc-300 p-2.5 mb-2 rounded-sm">
+                    <div className="font-bold mb-1.5 uppercase text-zinc-800">{rule.name}</div>
+                    <ul className="list-disc pl-4 space-y-1 text-zinc-700">
                       {rule.description
                         .split("\n")
                         .map(
@@ -652,55 +461,51 @@ export default function Datasheet({
                 ))}
               </div>
             ) : null}
-            {/* DAMAGED: 1-X WOUNDS (New Style with Description) */}
+            {/* DAMAGED */}
             {damagedRules.map((rule, i) => (
               <div
                 key={i}
-                className="shadow-sm overflow-hidden border border-zinc-300 mt-2"
+                className="shadow-sm overflow-hidden border border-zinc-300 mt-3 rounded-sm"
               >
-                {/* Header */}
                 <div
                   className="flex justify-between items-center text-white px-3 py-1.5"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  <span className="text-xm font-bold uppercase tracking-wider truncate mr-2">
+                  <span className="text-[13px] font-bold uppercase tracking-wider truncate mr-2">
                     {rule.name}
                   </span>
-                  <div className="flex items-center gap-1 px-2 py-0.5 shrink-0">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 shrink-0 bg-black/20 rounded">
                     <span className="opacity-90">
                       <DamagedIcon />
                     </span>
-                    <span className="text-[10px] font-bold text-yellow-400 leading-none">
+                    <span className="text-[10px] font-black text-yellow-400 tracking-wide">
                       ACTIVE
                     </span>
                   </div>
                 </div>
-                {/* Body (Description) */}
-                <div className="p-2 bg-white text-xs text-zinc-800 leading-snug whitespace-pre-line border-t border-zinc-200">
+                <div className="p-2.5 bg-white text-[13px] sm:text-[14px] text-zinc-800 leading-relaxed whitespace-pre-line border-t border-zinc-200">
                   {rule.description}
                 </div>
               </div>
             ))}
-            {/* INVULNERABLE SAVE (Priority: Base > Wargear/Abilities) */}
+            {/* INVULNERABLE SAVE */}
             {displayInvulns.map((rule, i) => (
               <div
                 key={i}
-                className="flex justify-between items-center text-white px-3 py-2 shadow-sm border border-white/10 mt-2"
+                className="flex justify-between items-center text-white px-4 py-2.5 shadow-md border-2  mt-3"
                 style={{ backgroundColor: primaryColor }}
               >
-                <span className="text-xm font-bold uppercase tracking-wider truncate mr-2">
-                  {/* ถ้าชื่อมีคำว่า Invuln/Invulnerable ให้แสดงว่า Invulnerable Save ถ้าไม่ใช่ (เช่น Storm Shield) ให้แสดงชื่อมัน */}
+                <span className="text-[13px] sm:text-[14px] font-black uppercase tracking-widest truncate mr-2 drop-shadow-sm">
                   {rule.name.toLowerCase().includes("invulnerable") ||
                     rule.name === "Invuln"
                     ? "Invulnerable Save"
                     : rule.name.toUpperCase()}
                 </span>
-
-                <div className="flex items-center gap-2 px-2 py-1 shrink-0">
-                  <span className="opacity-90">
+                <div className="flex items-center gap-2.5 px-2 py-1 shrink-0">
+                  <span className="opacity-100">
                     <InvulnIcon />
                   </span>
-                  <span className="text-xl font-black text-yellow-400 leading-none">
+                  <span className="text-2xl font-black text-yellow-400 leading-none drop-shadow-md">
                     {rule.description.match(/\d+\+/)?.[0] || "4+"}
                   </span>
                 </div>
@@ -710,15 +515,15 @@ export default function Datasheet({
 
           {/* FACTION KEYWORDS */}
           <div className="mt-auto">
-            <div className="bg-[#d4d4d4] p-2 px-3 border-t border-zinc-300">
-              <div className="flex flex-wrap gap-1">
-                <span className="font-bold text-[10px] text-zinc-500 py-0.5">
+            <div className="bg-[#d4d4d4] p-2.5 px-3 border-t border-zinc-300">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-bold text-[11px] text-zinc-600 uppercase tracking-wide">
                   Faction:
                 </span>
                 {unit.factionKeywords?.map((kw, i) => (
                   <span
                     key={i}
-                    className="text-[10px] font-bold bg-zinc-600 text-white px-1.5 py-0.5"
+                    className="text-[10px] font-bold bg-zinc-700 text-white px-2 py-0.5 rounded-sm uppercase tracking-wider"
                   >
                     {kw}
                   </span>
