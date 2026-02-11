@@ -96,6 +96,7 @@ export default function Page() {
               featuredUnit={featuredUnit}
               otherUnits={otherUnits}
               factionName={parsed.meta.faction}
+              detachmentName={parsed.detachment?.name || ""} // 👈 แก้ตรงนี้ครับ
             />
           </motion.div>
         )}
