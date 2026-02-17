@@ -1,5 +1,5 @@
 // app/components/Datasheet.tsx
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react"; // ✅ 1. เพิ่ม useEffect ตรงนี้
 import { ArmyListUnit } from "../lib/parser/armyList/armyListTypes";
 import { getFactionColor } from "../lib/constants/factionColors";
 
@@ -22,6 +22,21 @@ export default function Datasheet({
     name: string;
     description: string;
   } | null>(null);
+
+  // ✅ 2. ใส่ useEffect เพื่อดักจับการกดปุ่ม ESC
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedRule(null);
+      }
+    };
+
+    if (selectedRule) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedRule]);
 
   const ruleMap: Record<string, string> = useMemo(() => {
     const map: Record<string, string> = {};
@@ -157,32 +172,32 @@ export default function Datasheet({
 
   return (
     <div className="w-full bg-white text-zinc-900 shadow-xl font-sans mb-4 border-2 border-zinc-800 relative">
-      {/* MODAL (ยังเก็บไว้เผื่อเล่นในมือถือแล้วจิ้ม) */}
+      {/* MODAL (เวลาคลิกชื่อ Rule ให้เด้งเต็มจอ) */}
       {selectedRule && (
         <div
-          className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
           onClick={() => setSelectedRule(null)}
         >
           <div
-            className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl max-w-sm w-full p-0 overflow-hidden flex flex-col max-h-[85vh]"
+            className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl max-w-sm sm:max-w-xl w-full p-0 overflow-hidden flex flex-col max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* ✅ Header โหมดมืดแบบมีแถบสีนำหน้า */}
-            <div className="bg-zinc-900 text-white p-4 flex justify-between items-center border-b border-zinc-800">
+            {/* Header */}
+            <div className="bg-zinc-900 text-white p-4 flex justify-between items-center border-b border-zinc-800 shrink-0">
               <h3 className="font-black text-[16px] uppercase tracking-wide flex items-center gap-2">
                 <span className="w-1.5 h-4 rounded-full bg-orange-500"></span>
                 {selectedRule.name}
               </h3>
               <button
                 onClick={() => setSelectedRule(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition shrink-0"
               >
                 ✕
               </button>
             </div>
-            {/* ✅ Content โหมดมืด + คีย์เวิร์ดเรืองแสงสีทอง */}
+            {/* Content */}
             <div
-              className="wahapedia-content dark-theme p-5 text-[14px] leading-relaxed text-zinc-300 bg-zinc-900 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-zinc-900"
+              className="wahapedia-content dark-theme p-5 text-[14px] sm:text-[15px] leading-relaxed text-zinc-300 bg-zinc-900 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-zinc-900"
               dangerouslySetInnerHTML={{ __html: selectedRule.description }}
             />
           </div>
@@ -456,7 +471,6 @@ export default function Datasheet({
                 {unit.abilities["Leader"].map((rule, rIdx) => (
                   <div key={rIdx} className="text-[13px] sm:text-[14px] bg-zinc-200/70 border border-zinc-300 p-2.5 mb-2 rounded-sm">
                     <div className="font-bold mb-1.5 uppercase text-zinc-800">{rule.name}</div>
-                    {/* ✅ ใช้ replace(/\n/g, '<br/>') เพื่อดันรายชื่อ Unit ให้ขึ้นบรรทัดใหม่สวยงาม */}
                     <div
                       className="text-zinc-700 mt-1 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: rule.description.replace(/\n/g, '<br/>') }}

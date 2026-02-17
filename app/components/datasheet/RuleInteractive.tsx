@@ -49,7 +49,8 @@ export default function RuleInteractive({
             `}
             onClick={(e) => {
                 e.stopPropagation();
-                onClick(displayName, finalDesc!);
+                // ส่งชื่อและข้อมูลกลับไปให้ Datasheet.tsx เป็นคนเปิด Popup
+                onClick(displayName, finalDesc!); 
             }}
         >
             <span
@@ -69,24 +70,21 @@ export default function RuleInteractive({
                 <div className="relative drop-shadow-2xl filter">
                     <div
                         className={`absolute -bottom-[5px] w-4 h-4 bg-zinc-900 border-r border-b border-zinc-700 transform rotate-45 z-0 ${arrowPositionClass}`}
-                    >
-                        
-                    </div>
-                    
+                    ></div>
+
                     {/* ✅ คอนเทนเนอร์หลัก (ดีไซน์เดียวกับ RuleModal) */}
                     <div className="relative z-10 bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl flex flex-col max-h-[250px] sm:max-h-[350px] overflow-hidden">
-                        
+
                         {/* ✅ Header แบบเต็มขอบ (มีแถบสีนำหน้า) */}
                         <div className="flex items-center gap-2 p-3 border-b border-zinc-800 bg-zinc-900 shrink-0">
                             <span className={`w-1.5 h-4 rounded-full ${isWeaponRule ? 'bg-orange-500' : 'bg-red-600'}`}></span>
                             <h4
-                                className="font-black text-[14px] uppercase tracking-wide"
-                                style={color ? { color: color } : { color: "#f4f4f5" }}
+                                className="font-black text-[14px] uppercase tracking-wide leading-tight text-zinc-100"
                             >
                                 {displayName}
                             </h4>
                         </div>
-                        
+
                         {/* ✅ Content พื้นที่แยกที่มี Scrollbar หรูหรา */}
                         <div
                             className={`p-4 wahapedia-content dark-theme text-[13px] text-zinc-300 leading-relaxed font-normal text-left normal-case overflow-y-auto ${scrollbarStyle}`}

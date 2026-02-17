@@ -1,3 +1,4 @@
+// app/lib/parser/armyList/buildArmyListUnitFromModel.ts
 import { walkSelections } from "../roster/walkSelections"
 import type { SelectionNode } from "../roster/rosterImportTypes"
 import type { ArmyListUnit, ArmyListModel } from "./armyListTypes"
@@ -115,10 +116,17 @@ export function buildArmyListUnitFromModel(
                     const abilityName = rule.name ?? "Unknown Ability";
                     const originalDesc = rule.description ?? "";
 
+                    // 🌟 ทริค: ถ้าหมวดหมู่คือ "Leader" (กล่องล่างสุด) ให้ใช้รายชื่อ Unit ดั้งเดิม
+                    // แต่ถ้าเป็นกล่องอื่น (เช่น Core, Faction) ให้ดึงกฎ Leader จาก Wahapedia
+                    const isLeaderCategory = category === "Leader";
+                    const finalDesc = isLeaderCategory 
+                        ? originalDesc 
+                        : (getAbilityDescription(abilityName) || originalDesc);
+
                     return {
                         ...rule,
                         name: abilityName,
-                        description: getAbilityDescription(abilityName) || originalDesc
+                        description: finalDesc
                     };
                 }) as any[]
             ])

@@ -131,12 +131,8 @@ export const getAbilityDescription = (name: string): string | null => {
     // แบบที่ 1: ชื่อตรงตัว
     const normalizedName = name.toLowerCase().trim();
 
-    // 🛑 ข้อยกเว้น: ถ้าเป็นกฎ Leader หรือ Attached Unit ให้ return null ทันที
-    // เพื่อให้ระบบกลับไปใช้ข้อความ "รายชื่อ Unit" จาก New Recruit ดั้งเดิม
-    if (normalizedName === "leader" || normalizedName === "attached unit") {
-        return null;
-    }
-
+    // ✅ ปลดล็อกเอาบรรทัดที่บล็อก Leader ทิ้งไปแล้วครับ!
+    
     // แบบที่ 2: ชื่อที่ตัด (Aura) หรือ [Psychic] ออก เผื่อ New Recruit พ่วงมา
     const cleanName = name.split('(')[0].replace(/\[.*?\]/g, '').toLowerCase().trim();
 
@@ -164,4 +160,3 @@ export const getAbilityDescription = (name: string): string | null => {
 
     return null; // ถ้าหาไม่เจอจริงๆ ค่อยกลับไปใช้ของเดิมจาก New Recruit
 };
-

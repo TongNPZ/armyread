@@ -1,5 +1,5 @@
 // app/components/RuleModal.tsx
-import React from "react"
+import React, { useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { ParsedRoster } from "../lib/parser/parseRoster"
 import type { OpenRule } from "../hooks/useArmyRoster"
@@ -14,6 +14,23 @@ interface Props {
 export default function RuleModal({ openRule, setOpenRule, armyRules, detachment }: Props) {
     // Custom Scrollbar Styles
     const scrollbarStyle = "scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-zinc-900 hover:scrollbar-thumb-zinc-500"
+
+    // ✅ เพิ่ม useEffect บล็อกนี้เข้าไป เพื่อดักจับปุ่ม ESC
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setOpenRule(null)
+            }
+        }
+        
+        // ถ้า Popup เปิดอยู่ ให้เริ่มดักจับปุ่มกด
+        if (openRule) {
+            window.addEventListener("keydown", handleKeyDown)
+        }
+        
+        // คืนค่า (Cleanup) เมื่อ Component ถูกปิด
+        return () => window.removeEventListener("keydown", handleKeyDown)
+    }, [openRule, setOpenRule])
 
     return (
         <AnimatePresence>

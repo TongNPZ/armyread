@@ -152,8 +152,16 @@ export function getAbilitiesAndKeywords(node: SelectionNode) {
             abilities["Damaged"].push({ name, description });
             return;
         }
-        if (name === "Leader" || lowerName.includes("attached unit")) {
+        // ✅ เปลี่ยนมาใช้ lowerName === "leader" เพื่อกันปัญหาตัวพิมพ์เล็ก/ใหญ่
+        if (lowerName === "leader" || lowerName.includes("attached unit")) {
+            // จับใส่กล่อง Leader เพื่อไปสร้างกล่องรายชื่อ Unit ด้านล่าง
             abilities["Leader"].push({ name, description });
+
+            // ✅ ก๊อปปี้เฉพาะคำว่า "Leader" ไปใส่กล่อง Core ด้วย! 
+            // เพื่อให้มันโชว์ในบรรทัด CORE: Leader และมี Popup Tooltip ให้จิ้มดูรายชื่อได้
+            if (lowerName === "leader") {
+                abilities["Core"].push({ name, description });
+            }
             return;
         }
 

@@ -121,10 +121,21 @@ export function buildArmyListUnit(
         abilities: Object.fromEntries(
             Object.entries(abilities).map(([category, rules]) => [
                 category,
-                rules.map(rule => ({
-                    ...rule,
-                    description: getAbilityDescription(rule.name) || rule.description
-                }))
+                rules.map(rule => {
+                    const ruleName = rule.name ?? "Unknown Rule";
+                    const originalDesc = rule.description ?? "";
+
+                    // 🌟 ถ้าเป็นหมวดหมู่ "Leader" ด้านล่างสุด ให้คงรายชื่อ Unit เดิมไว้
+                    // แต่ถ้าเป็นกล่องอื่น (เช่น Core) ให้ดึงกฎความสามารถจาก Wahapedia
+                    const finalDesc = category === "Leader"
+                        ? originalDesc
+                        : (getAbilityDescription(ruleName) || originalDesc);
+
+                    return {
+                        ...rule,
+                        description: finalDesc
+                    };
+                })
             ])
         ),
         keywords,
