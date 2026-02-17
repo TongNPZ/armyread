@@ -137,3 +137,143 @@ th {
   }
 }
 
+/* ==========================================
+   Wahapedia Rules Styling (Override Tailwind Reset)
+   ========================================== */
+
+/* 1. คืนค่าพื้นฐานให้กับ HTML Tags ที่อยู่ข้างใน .wahapedia-content */
+.wahapedia-content p {
+  margin-bottom: 0.75rem;
+}
+
+.wahapedia-content b,
+.wahapedia-content strong {
+  font-weight: 800 !important;
+  color: #111827;
+  /* สีดำเข้ม */
+}
+
+.wahapedia-content i,
+.wahapedia-content em {
+  font-style: italic !important;
+}
+
+.wahapedia-content ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  display: block !important;
+}
+
+.wahapedia-content li {
+  display: list-item !important;
+  margin-bottom: 0.25rem;
+}
+
+/* 2. คลาสเฉพาะของ Wahapedia */
+.kwb {
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  color: #000000;
+}
+
+.kwbu {
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  text-decoration: underline;
+  cursor: help;
+}
+
+/* ซ่อน Header ซ้ำซ้อนของ Wahapedia */
+.abFlex {
+  display: none !important;
+}
+
+/* ข้อความอารัมภบท (Fluff text) */
+.ShowFluff,
+.stratLegend2 {
+  font-style: italic !important;
+  color: #6b7280 !important;
+  /* สีเทา */
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+/* กล่อง Example สีแดง */
+.redExample {
+  background-color: #fee2e2 !important;
+  /* พื้นหลังแดงอ่อน */
+  border-left: 4px solid #ef4444 !important;
+  /* แถบซ้ายแดงสด */
+  padding: 0.75rem !important;
+  margin: 1rem 0 !important;
+  border-radius: 0.25rem;
+  color: #7f1d1d !important;
+  /* ตัวหนังสือสีแดงเข้ม */
+}
+
+/* กล่องสรุปย่อท้ายสุด (Frame Light) */
+.frameLight,
+.Corner14 {
+  background-color: #f3f4f6 !important;
+  /* พื้นหลังเทาอ่อน */
+  padding: 1rem !important;
+  border-radius: 0.25rem;
+  margin-top: 1rem !important;
+  border: 1px solid #e5e7eb;
+}
+
+/* ลิสต์แบบ Bullet สี่เหลี่ยมสีแดง (ในกล่องสรุป Leader) */
+.redSquare {
+  list-style-type: square !important;
+  color: #ef4444 !important;
+  /* จุด Bullet สีแดง */
+}
+
+.redSquare li span,
+.redSquare li {
+  color: #374151 !important;
+  /* ตัวอักษรสีเทาเข้ม */
+}
+
+.BreakInsideAvoid {
+  break-inside: avoid;
+}
+
+/* ==========================================
+   Dark Theme Overrides (สำหรับ ArmyHeader & RuleModal)
+   ========================================== */
+
+/* เปลี่ยนสีข้อความธรรมดาให้สว่างขึ้น */
+.dark-theme {
+  color: #d4d4d8; /* text-zinc-300 */
+}
+
+/* เปลี่ยนสีคีย์เวิร์ดและตัวหนา ให้เป็นสีเหลืองทอง (Amber-400) เพื่อให้ตัดกับพื้นดำ */
+.dark-theme b,
+.dark-theme strong,
+.dark-theme .kwb,
+.dark-theme .kwbu {
+  color: #fbbf24 !important; 
+  font-weight: 800 !important;
+}
+
+/* ปรับกล่อง Example สีแดงให้เข้ากับโหมดมืด */
+.dark-theme .redExample {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border-left: 4px solid #ef4444 !important;
+  color: #fca5a5 !important; /* text-red-300 */
+}
+
+/* ปรับกล่องสรุปย่อให้เข้ากับโหมดมืด */
+.dark-theme .frameLight, 
+.dark-theme .Corner14 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid #3f3f46 !important; /* border-zinc-700 */
+}
+
+.dark-theme .redSquare li span, 
+.dark-theme .redSquare li {
+  color: #d4d4d8 !important;
+}

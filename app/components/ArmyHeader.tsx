@@ -1,3 +1,4 @@
+// app/components/ArmyHeader.tsx
 import React, { useState } from "react"
 import type { ParsedRoster } from "../lib/parser/parseRoster"
 import type { ArmyListUnit } from "../lib/parser/armyList/armyListTypes"
@@ -21,7 +22,7 @@ export default function ArmyHeader({ meta, units, armyRules, detachment, viewMod
 
     return (
         <section className="border border-zinc-700 bg-zinc-900/80 pt-3 px-4 space-y-3 rounded-t-lg shadow-lg">
-            
+
             {/* --- TOP ROW --- */}
             <div className="flex justify-between items-start">
                 <div>
@@ -75,7 +76,7 @@ export default function ArmyHeader({ meta, units, armyRules, detachment, viewMod
 
             {/* --- COLLAPSIBLE RULES --- */}
             <div className="border-t border-zinc-800 pt-1">
-                <button 
+                <button
                     onClick={() => setShowRules(!showRules)}
                     className="w-full flex items-center justify-center gap-2 py-1 text-zinc-500 hover:text-zinc-300 transition-colors group"
                 >
@@ -102,13 +103,15 @@ export default function ArmyHeader({ meta, units, armyRules, detachment, viewMod
                                             <div className="w-0.5 h-3 bg-red-600 rounded-full"></div>
                                             <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wide">Army Rule</h3>
                                         </div>
-                                        
+
                                         <div className="bg-zinc-950/60 p-2.5 rounded border border-zinc-700/50 flex justify-between items-start gap-3 hover:border-zinc-600 transition">
                                             <div className="min-w-0 space-y-0.5">
                                                 <div className="font-bold text-sm text-zinc-200">{rule.name}</div>
-                                                <div className="text-xs text-zinc-500 line-clamp-2 leading-snug whitespace-pre-line">
-                                                    {rule.description}
-                                                </div>
+                                                {/* ✅ เปลี่ยนเป็น dangerouslySetInnerHTML สำหรับ Army Rule */}
+                                                <div
+                                                    className="wahapedia-content dark-theme text-xs text-zinc-400 line-clamp-2 leading-snug"
+                                                    dangerouslySetInnerHTML={{ __html: rule.description }}
+                                                />
                                             </div>
                                             <button
                                                 onClick={() => setOpenRule({ type: "army", id: rule.id })}
@@ -131,9 +134,11 @@ export default function ArmyHeader({ meta, units, armyRules, detachment, viewMod
                                             <div className="min-w-0 space-y-0.5">
                                                 <div className="font-bold text-sm text-zinc-200">{detachment.name}</div>
                                                 {detachment.rules?.[0] && (
-                                                    <div className="text-xs text-zinc-500 line-clamp-2 leading-snug whitespace-pre-line">
-                                                        {detachment.rules[0].description}
-                                                    </div>
+                                                    /* ✅ เปลี่ยนเป็น dangerouslySetInnerHTML สำหรับ Detachment */
+                                                    <div
+                                                        className="wahapedia-content dark-theme text-xs text-zinc-400 line-clamp-2 leading-snug"
+                                                        dangerouslySetInnerHTML={{ __html: detachment.rules[0].description }}
+                                                    />
                                                 )}
                                             </div>
                                             <button
@@ -156,8 +161,8 @@ export default function ArmyHeader({ meta, units, armyRules, detachment, viewMod
                 <button
                     onClick={() => setViewMode("armyList")}
                     className={`flex-1 py-2 text-xs font-bold uppercase tracking-wide transition-all relative ${viewMode === "armyList"
-                            ? "text-white"
-                            : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30"
+                        ? "text-white"
+                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30"
                         }`}
                 >
                     Army List
@@ -168,8 +173,8 @@ export default function ArmyHeader({ meta, units, armyRules, detachment, viewMod
                 <button
                     onClick={() => setViewMode("datasheet")}
                     className={`flex-1 py-2 text-xs font-bold uppercase tracking-wide transition-all relative ${viewMode === "datasheet"
-                            ? "text-white"
-                            : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30"
+                        ? "text-white"
+                        : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30"
                         }`}
                 >
                     Datasheets

@@ -1,9 +1,12 @@
+// app/lib/parser/armyList/buildArmyListUnit.ts
 import { walkSelections } from "../roster/walkSelections"
 import type { SelectionNode } from "../roster/rosterImportTypes"
 import type { ArmyListUnit, ArmyListModel } from "./armyListTypes"
 import { getPoints } from "../getPoints"
 import { getPrimaryCategoryFromNode } from "./getPrimaryCategory"
 import { getUnitStats, getWeaponStats, getAbilitiesAndKeywords } from "./armyListHelpers"
+// ✅ Import ฟังก์ชันค้นหาจาก Wahapedia
+import { getAbilityDescription } from "../../wahapedia/lookup"
 
 export function buildArmyListUnit(
     unitNode: SelectionNode
@@ -114,7 +117,16 @@ export function buildArmyListUnit(
         isWarlord: unitIsWarlord,
         category: getPrimaryCategoryFromNode(unitNode),
         stats,
-        abilities,
+        // ✅ แปลง Object abilities โดยลูปผ่านแต่ละ Category ("Core", "Faction", ฯลฯ)
+        abilities: Object.fromEntries(
+            Object.entries(abilities).map(([category, rules]) => [
+                category,
+                rules.map(rule => ({
+                    ...rule,
+                    description: getAbilityDescription(rule.name) || rule.description
+                }))
+            ])
+        ),
         keywords,
         factionKeywords
     }

@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { ArmyListUnit } from "../lib/parser/armyList/armyListTypes";
 import { getFactionColor } from "../lib/constants/factionColors";
 
-// ✅ 1. Import Component ที่แยกออกไป
+// ✅ Import Component ที่แยกออกไป
 import { RangedIcon, MeleeIcon, InvulnIcon, DamagedIcon } from "./datasheet/DatasheetIcons";
 import RuleInteractive from "./datasheet/RuleInteractive";
 import WeaponProfileRow, { ProcessedWeapon } from "./datasheet/WeaponProfileRow";
@@ -164,23 +164,27 @@ export default function Datasheet({
           onClick={() => setSelectedRule(null)}
         >
           <div
-            className="bg-white border-2 border-zinc-800 shadow-2xl max-w-sm w-full p-0 overflow-hidden"
+            className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl max-w-sm w-full p-0 overflow-hidden flex flex-col max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-zinc-900 text-white p-3 flex justify-between items-center border-b-2 border-red-600">
-              <h3 className="font-bold text-lg text-yellow-400">
+            {/* ✅ Header โหมดมืดแบบมีแถบสีนำหน้า */}
+            <div className="bg-zinc-900 text-white p-4 flex justify-between items-center border-b border-zinc-800">
+              <h3 className="font-black text-[16px] uppercase tracking-wide flex items-center gap-2">
+                <span className="w-1.5 h-4 rounded-full bg-orange-500"></span>
                 {selectedRule.name}
               </h3>
               <button
                 onClick={() => setSelectedRule(null)}
-                className="text-zinc-400 hover:text-white"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition"
               >
                 ✕
               </button>
             </div>
-            <div className="p-5 text-sm leading-relaxed text-zinc-800 bg-zinc-50 max-h-[60vh] overflow-y-auto whitespace-pre-line">
-              {selectedRule.description}
-            </div>
+            {/* ✅ Content โหมดมืด + คีย์เวิร์ดเรืองแสงสีทอง */}
+            <div
+              className="wahapedia-content dark-theme p-5 text-[14px] leading-relaxed text-zinc-300 bg-zinc-900 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-zinc-900"
+              dangerouslySetInnerHTML={{ __html: selectedRule.description }}
+            />
           </div>
         </div>
       )}
@@ -340,10 +344,13 @@ export default function Datasheet({
                           <span className="absolute left-0 top-0 font-bold text-zinc-400">
                             •
                           </span>
-                          <strong className="text-black font-bold uppercase">
+                          <strong className="text-black font-bold uppercase block mb-1">
                             {rule.name}:
-                          </strong>{" "}
-                          {rule.description}
+                          </strong>
+                          <div
+                            className="wahapedia-content"
+                            dangerouslySetInnerHTML={{ __html: rule.description }}
+                          />
                         </div>
                       ))}
                     </div>
@@ -433,11 +440,13 @@ export default function Datasheet({
                 <div className="font-bold text-zinc-900 text-[13px] sm:text-[14px] uppercase tracking-wide">
                   {rule.name}
                 </div>
-                <div className="text-[13px] sm:text-[14px] text-zinc-700 leading-relaxed whitespace-pre-line mt-1.5">
-                  {rule.description}
-                </div>
+                <div
+                  className="wahapedia-content text-[13px] sm:text-[14px] text-zinc-700 leading-relaxed mt-1.5"
+                  dangerouslySetInnerHTML={{ __html: rule.description }}
+                />
               </div>
             ))}
+
             {/* LEADER */}
             {unit.abilities?.["Leader"]?.length ? (
               <div className="pt-2 border-t border-zinc-300 mt-3">
@@ -447,20 +456,16 @@ export default function Datasheet({
                 {unit.abilities["Leader"].map((rule, rIdx) => (
                   <div key={rIdx} className="text-[13px] sm:text-[14px] bg-zinc-200/70 border border-zinc-300 p-2.5 mb-2 rounded-sm">
                     <div className="font-bold mb-1.5 uppercase text-zinc-800">{rule.name}</div>
-                    <ul className="list-disc pl-4 space-y-1 text-zinc-700">
-                      {rule.description
-                        .split("\n")
-                        .map(
-                          (line, i) =>
-                            line.trim().length > 1 && (
-                              <li key={i}>{line.replace(/^[■-]\s*/, "")}</li>
-                            ),
-                        )}
-                    </ul>
+                    {/* ✅ ใช้ replace(/\n/g, '<br/>') เพื่อดันรายชื่อ Unit ให้ขึ้นบรรทัดใหม่สวยงาม */}
+                    <div
+                      className="text-zinc-700 mt-1 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: rule.description.replace(/\n/g, '<br/>') }}
+                    />
                   </div>
                 ))}
               </div>
             ) : null}
+
             {/* DAMAGED */}
             {damagedRules.map((rule, i) => (
               <div
@@ -483,9 +488,10 @@ export default function Datasheet({
                     </span>
                   </div>
                 </div>
-                <div className="p-2.5 bg-white text-[13px] sm:text-[14px] text-zinc-800 leading-relaxed whitespace-pre-line border-t border-zinc-200">
-                  {rule.description}
-                </div>
+                <div
+                  className="wahapedia-content p-2.5 bg-white text-[13px] sm:text-[14px] text-zinc-800 leading-relaxed border-t border-zinc-200"
+                  dangerouslySetInnerHTML={{ __html: rule.description }}
+                />
               </div>
             ))}
             {/* INVULNERABLE SAVE */}

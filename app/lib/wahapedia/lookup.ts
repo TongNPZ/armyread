@@ -121,3 +121,47 @@ export const getApplicableStratagems = (
         return true;
     });
 };
+
+// ==========================================
+// 🔍 2. ฟังก์ชันค้นหา Descriptions ของ Abilities และ Rules
+// ==========================================
+export const getAbilityDescription = (name: string): string | null => {
+    if (!name) return null;
+
+    // แบบที่ 1: ชื่อตรงตัว
+    const normalizedName = name.toLowerCase().trim();
+
+    // 🛑 ข้อยกเว้น: ถ้าเป็นกฎ Leader หรือ Attached Unit ให้ return null ทันที
+    // เพื่อให้ระบบกลับไปใช้ข้อความ "รายชื่อ Unit" จาก New Recruit ดั้งเดิม
+    if (normalizedName === "leader" || normalizedName === "attached unit") {
+        return null;
+    }
+
+    // แบบที่ 2: ชื่อที่ตัด (Aura) หรือ [Psychic] ออก เผื่อ New Recruit พ่วงมา
+    const cleanName = name.split('(')[0].replace(/\[.*?\]/g, '').toLowerCase().trim();
+
+    // ลำดับการค้นหา: 1. ความสามารถเฉพาะ Unit -> 2. ความสามารถทั่วไป -> 3. ความสามารถ Detachment
+    const allSources = [
+        datasheetsAbilitiesData,
+        abilitiesData,
+        detachmentAbilitiesData
+    ];
+
+    for (const source of allSources) {
+        // หาจากชื่อเต็มก่อน
+        let found = source.find(a => a.name.toLowerCase().trim() === normalizedName);
+
+        // ถ้าไม่เจอ ลองหาจากชื่อที่คลีนแล้ว
+        if (!found) {
+            found = source.find(a => a.name.toLowerCase().trim() === cleanName);
+        }
+
+        if (found && found.description) {
+            // ส่งคืนค่า Description (ไม่บังคับลบ <br> เผื่อนำไปแปลงเป็น HTML ในหน้า UI ทีหลัง)
+            return found.description;
+        }
+    }
+
+    return null; // ถ้าหาไม่เจอจริงๆ ค่อยกลับไปใช้ของเดิมจาก New Recruit
+};
+

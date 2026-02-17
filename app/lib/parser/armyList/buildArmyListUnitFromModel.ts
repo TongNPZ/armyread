@@ -5,6 +5,9 @@ import { getPoints } from "../getPoints"
 import { getPrimaryCategoryFromNode } from "./getPrimaryCategory"
 import { getUnitStats, getWeaponStats, getAbilitiesAndKeywords } from "./armyListHelpers"
 
+// ✅ 1. Import ฟังก์ชันค้นหาจาก Wahapedia
+import { getAbilityDescription } from "../../wahapedia/lookup"
+
 export function buildArmyListUnitFromModel(
     modelNode: SelectionNode
 ): ArmyListUnit | null {
@@ -104,7 +107,22 @@ export function buildArmyListUnitFromModel(
         isWarlord: unitIsWarlord,
         category: getPrimaryCategoryFromNode(modelNode),
         stats,
-        abilities,
+        // ✅ 2. แปลง Object abilities โดยลูปผ่านแต่ละ Category เพื่อดึง Description จาก Wahapedia
+        abilities: Object.fromEntries(
+            Object.entries(abilities).map(([category, rules]) => [
+                category,
+                (rules || []).map((rule: any) => {
+                    const abilityName = rule.name ?? "Unknown Ability";
+                    const originalDesc = rule.description ?? "";
+
+                    return {
+                        ...rule,
+                        name: abilityName,
+                        description: getAbilityDescription(abilityName) || originalDesc
+                    };
+                }) as any[]
+            ])
+        ),
         keywords,
         factionKeywords
     }

@@ -2,7 +2,6 @@
 import React from "react";
 import RuleInteractive from "./RuleInteractive";
 
-// ตัวนี้เราต้องสร้าง Type ไว้รับ Profile เพราะไฟล์หลักแยก Type ไว้ในนั้น
 export interface ProcessedWeapon {
     name: string;
     range: string;
@@ -52,7 +51,8 @@ export default function WeaponProfileRow({
                         <span className="flex flex-wrap items-center gap-x-1 text-[11px] text-zinc-600 sm:ml-1">
                             {keywords.map((kw, i) => (
                                 <span key={i} className="flex items-center">
-                                    <span className="mr-0.5">[</span>
+                                    {/* ✅ ปรับให้วงเล็บ [ ] มีสีเดียวกับ Faction */}
+                                    <span className="mr-[1px] font-bold opacity-80" style={primaryColor ? { color: primaryColor } : {}}>[</span>
                                     <RuleInteractive
                                         name={kw}
                                         color={primaryColor}
@@ -60,9 +60,9 @@ export default function WeaponProfileRow({
                                         onClick={onRuleClick}
                                         ruleMap={ruleMap}
                                     />
-                                    <span className="ml-0.5">]</span>
+                                    <span className="ml-[1px] font-bold opacity-80" style={primaryColor ? { color: primaryColor } : {}}>]</span>
                                     {i < keywords.length - 1 && (
-                                        <span className="ml-1 text-zinc-400">,</span>
+                                        <span className="ml-0.5 text-zinc-400">,</span>
                                     )}
                                 </span>
                             ))}

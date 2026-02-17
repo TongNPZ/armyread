@@ -1,6 +1,8 @@
 // app/lib/parser/armyList/normalizeArmyRules.ts
 import type { Force, ArmyRule } from "../roster/rosterImportTypes"
 import { walkSelections } from "../roster/walkSelections"
+// ✅ Import ฟังก์ชันค้นหาจาก Wahapedia
+import { getAbilityDescription } from "../../wahapedia/lookup"
 
 export type ArmyRuleReferenceGroup = {
     title: string
@@ -59,10 +61,13 @@ export function normalizeArmyRules(
                 !mainRuleBase &&
                 rule.description?.includes("If your Army Faction is")
             ) {
+                // ✅ ลองหา Description ที่ดีกว่าจาก CSV
+                const betterDesc = getAbilityDescription(rule.name);
+
                 mainRuleBase = {
                     id: rule.id,
                     name: rule.name,
-                    description: rule.description,
+                    description: betterDesc || rule.description, // ใช้ของดีกว่าถ้ามี
                 }
                 seen.add(rule.id)
             }
@@ -109,31 +114,43 @@ export function normalizeArmyRules(
 
                 if (hasSoftUnitBound && modifiesWeaponStats) return
 
-                /* ===== build description ===== */
-                const parts: string[] = []
-
-                for (const c of profile.characteristics) {
-                    const value = c.$text ?? c.value
-                    if (!value) continue
-
-                    if (c.name && c.name !== "Effect") {
-                        parts.push(`${c.name}: ${value}`)
-                    } else {
-                        parts.push(value)
-                    }
-                }
-
-                if (parts.length === 0) return
-
                 const id = profile.id ?? profile.name
                 if (!id || seen.has(id)) return
                 seen.add(id)
 
-                rules.push({
-                    id,
-                    name: profile.name ?? "Rule",
-                    description: parts.join("\n"),
-                })
+                // ✅ ค้นหา Description จาก Wahapedia สำหรับกฎย่อย
+                const betterDesc = getAbilityDescription(profile.name ?? "");
+
+                if (betterDesc) {
+                    // ถ้าหาเจอ ใช้ของ Wahapedia ทันที
+                    rules.push({
+                        id,
+                        name: profile.name ?? "Rule",
+                        description: betterDesc,
+                    })
+                } else {
+                    // ===== ถ้าหาไม่เจอ ใช้ fallback build description แบบเดิม =====
+                    const parts: string[] = []
+
+                    for (const c of profile.characteristics) {
+                        const value = c.$text ?? c.value
+                        if (!value) continue
+
+                        if (c.name && c.name !== "Effect") {
+                            parts.push(`${c.name}: ${value}`)
+                        } else {
+                            parts.push(value)
+                        }
+                    }
+
+                    if (parts.length > 0) {
+                        rules.push({
+                            id,
+                            name: profile.name ?? "Rule",
+                            description: parts.join("\n"),
+                        })
+                    }
+                }
             })
 
             if (rules.length > 0) {

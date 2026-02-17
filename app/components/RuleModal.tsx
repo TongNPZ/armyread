@@ -1,3 +1,4 @@
+// app/components/RuleModal.tsx
 import React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { ParsedRoster } from "../lib/parser/parseRoster"
@@ -34,9 +35,6 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
                     >
                         {/* 1. Header (Sticky) */}
                         <div className="flex justify-between items-center p-5 border-b border-zinc-800 bg-zinc-900 sticky top-0 z-10">
-                            {/* <h1 className="text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-2">
-                                        {detachment.name}
-                                    </h1> */}
                             <h2 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
                                 <span className={`w-2 h-6 rounded-full ${openRule.type === 'detachment' ? 'bg-purple-600' : 'bg-red-600'}`}></span>
                                 {openRule.type === 'army' ? 'Army Rule' : 'Detachment Rule'}
@@ -60,9 +58,11 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
                                                 <h1 className="text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-2">
                                                     {rule.name}
                                                 </h1>
-                                                <div className="text-base text-zinc-300 leading-relaxed whitespace-pre-line font-sans">
-                                                    {rule.description}
-                                                </div>
+                                                {/* ✅ ใส่ dark-theme ใน Army Rule หลัก */}
+                                                <div 
+                                                    className="wahapedia-content dark-theme text-base text-zinc-300 leading-relaxed font-sans"
+                                                    dangerouslySetInnerHTML={{ __html: rule.description }}
+                                                />
                                             </div>
 
                                             {rule.references && rule.references.length > 0 && (
@@ -71,14 +71,16 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
                                                         <div key={ref.title} className="bg-zinc-950/50 p-4 rounded-lg border border-zinc-800/50">
                                                             <div className="font-bold text-zinc-200 mb-3 text-lg">{ref.title}</div>
                                                             <div className="space-y-4">
-                                                                {ref.rules.map((r, idx) => (
+                                                                {ref.rules.map((r) => (
                                                                     <div key={r.id} className="relative pl-4 border-l-2 border-zinc-700">
                                                                         <div className="font-bold text-zinc-200 text-sm mb-1">
                                                                             {r.name}
                                                                         </div>
-                                                                        <div className="text-sm text-zinc-400 whitespace-pre-line leading-relaxed">
-                                                                            {r.description}
-                                                                        </div>
+                                                                        {/* ✅ ใส่ dark-theme ใน กฎย่อย (References) */}
+                                                                        <div 
+                                                                            className="wahapedia-content dark-theme text-sm text-zinc-400 leading-relaxed"
+                                                                            dangerouslySetInnerHTML={{ __html: r.description }}
+                                                                        />
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -98,9 +100,11 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
                                     <div className="text-lg font-medium text-zinc-400 border-b border-zinc-800 pb-4 mb-4">
                                         Detachment Rule
                                     </div>
-                                    <div className="text-base text-zinc-300 leading-relaxed whitespace-pre-line font-sans">
-                                        {rule.description}
-                                    </div>
+                                    {/* ✅ ใส่ dark-theme ใน Detachment Rule */}
+                                    <div 
+                                        className="wahapedia-content dark-theme text-base text-zinc-300 leading-relaxed font-sans"
+                                        dangerouslySetInnerHTML={{ __html: rule.description }}
+                                    />
                                 </div>
                             ))}
                         </div>
