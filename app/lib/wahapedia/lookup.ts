@@ -6,8 +6,8 @@ import detachmentAbilitiesJson from '@/app/data/wahapedia/Detachment_abilities.j
 import datasheetsAbilitiesJson from '@/app/data/wahapedia/Datasheets_abilities.json';
 import factionsJson from '@/app/data/wahapedia/Factions.json';
 import datasheetsJson from '@/app/data/wahapedia/Datasheets.json';
-import datasheetsLeaderJson from '@/app/data/wahapedia/Datasheets_leader.json'; 
-import datasheetsKeywordsJson from '@/app/data/wahapedia/Datasheets_keywords.json'; 
+import datasheetsLeaderJson from '@/app/data/wahapedia/Datasheets_leader.json';
+import datasheetsKeywordsJson from '@/app/data/wahapedia/Datasheets_keywords.json';
 
 // --- Type Definitions ---
 export interface WahapediaStratagem {
@@ -62,9 +62,9 @@ const isValidUnit = (sheet: any): boolean => {
 
     // 1. กรองจาก URL โฟลเดอร์พิเศษ (ไดนามิก 100% ไม่ต้องจำชื่อยูนิต)
     if (
-        linkStr.includes('/legends/') || 
-        linkStr.includes('/combat-patrol/') || 
-        linkStr.includes('/kill-team/') || 
+        linkStr.includes('/legends/') ||
+        linkStr.includes('/combat-patrol/') ||
+        linkStr.includes('/kill-team/') ||
         linkStr.includes('/boarding-actions/') ||
         linkStr.includes('/box-sets/') ||
         linkStr.includes('/titans/')
@@ -75,7 +75,7 @@ const isValidUnit = (sheet: any): boolean => {
 
     // 3. กรองคำว่า Legend หรือตัวโปรโมบางตัวที่ยังตกค้าง
     if (lowerName.includes('legend')) return false;
-    
+
     // 4. Blacklist เฉพาะตัวที่เคยเป็นปัญหาในโคเด็กซ์เก่า
     const exactTrashNames = [
         'primaris company champion', 'inquisitor eisenhorn',
@@ -89,7 +89,7 @@ const isValidUnit = (sheet: any): boolean => {
     const partialTrashNames = ['kastiel', 'xacharus', 'titus'];
     if (partialTrashNames.some(t => lowerName.includes(t))) return false;
 
-    return true; 
+    return true;
 };
 
 // ==========================================
@@ -107,7 +107,7 @@ export const getApplicableStratagems = (
         if (!typeStr.includes("core")) return false;
         if (typeStr.includes("boarding") || typeStr.includes("challenger") || typeStr.includes("crusade")) return false;
         if (name === "NEW ORDERS") return false;
-        return true; 
+        return true;
     });
 
     const detachmentStratagems = detachmentName
@@ -159,7 +159,15 @@ export const getApplicableStratagems = (
 export const getAbilityDescription = (name: string): string | null => {
     if (!name) return null;
     const normalizedName = name.toLowerCase().trim();
-    if (normalizedName === "attached unit" || normalizedName === "leader") return null; 
+
+    // 🛑 บล็อกคำสงวน! ถ้าเป็นคำพวกนี้ "ห้าม" ไปดึงจาก Wahapedia ให้ใช้ของ Roster เดิม!
+    if (
+        normalizedName === "attached unit" ||
+        normalizedName === "leader" ||
+        normalizedName === "transport" // ✅ เพิ่มบรรทัดนี้เข้าไป!
+    ) {
+        return null;
+    }
 
     const cleanName = name.split('(')[0].replace(/\[.*?\]/g, '').toLowerCase().trim();
     const allSources = [datasheetsAbilitiesData, abilitiesData, detachmentAbilitiesData];
@@ -176,13 +184,13 @@ export const getAbilityDescription = (name: string): string | null => {
 // 🔍 3. หา Leader (LED BY) ที่สามารถนำลูกน้องตัวนี้ได้
 // ==========================================
 export const findGlobalLeaders = (
-    targetUnitName: string, 
-    armyFaction: string = "", 
+    targetUnitName: string,
+    armyFaction: string = "",
     unitFactionKeywords: string[] = [],
-    rosterUnits: any[] = [] 
+    rosterUnits: any[] = []
 ): string[] => {
     if (!targetUnitName) return [];
-    
+
     // ✅ ทำความสะอาดชื่อก่อนส่งค้นหา
     const normalizedTarget = cleanDatasheetName(targetUnitName);
     const foundLeaders = new Set<string>();
@@ -204,13 +212,13 @@ export const findGlobalLeaders = (
     rosterUnits.forEach(u => {
         if (u.factionKeywords) u.factionKeywords.forEach(checkAndAddChapter);
         if (u.keywords) u.keywords.forEach(checkAndAddChapter);
-        checkAndAddChapter(u.name); 
+        checkAndAddChapter(u.name);
     });
 
-    const targetDatasheet = datasheetsData.find(d => 
+    const targetDatasheet = datasheetsData.find(d =>
         cleanDatasheetName(d.name) === normalizedTarget && isValidUnit(d)
     );
-    
+
     if (targetDatasheet) {
         const targetId = targetDatasheet.id;
         const targetFactionId = targetDatasheet.faction_id;
@@ -219,7 +227,7 @@ export const findGlobalLeaders = (
         const agentsId = agentsFaction ? agentsFaction.id : "AoI";
 
         const allowedFactionIds = new Set<string>([targetFactionId, agentsId]);
-        
+
         factionsData.forEach(fac => {
             const facName = fac.name.toLowerCase();
             if (myChapters.has(facName) || armyFaction.toLowerCase() === facName || armyFaction.toLowerCase().includes(facName)) {
@@ -237,9 +245,9 @@ export const findGlobalLeaders = (
 
         matchedLinks.forEach(link => {
             const leaderSheet = datasheetsData.find(d => d.id === link.leader_id);
-            
-            if (leaderSheet && isValidUnit(leaderSheet)) { 
-                
+
+            if (leaderSheet && isValidUnit(leaderSheet)) {
+
                 const leaderFactionId = leaderSheet.faction_id;
 
                 if (allowedFactionIds.has(leaderFactionId)) {
@@ -251,11 +259,11 @@ export const findGlobalLeaders = (
                     const leaderChapters = smChapters.filter(ch => leaderKeywords.some(lk => lk.includes(ch)));
 
                     let conflict = false;
-                    
+
                     if (leaderChapters.length > 0) {
                         if (myChapters.size > 0) {
                             const overlap = leaderChapters.some(ch => myChapters.has(ch));
-                            if (!overlap) conflict = true; 
+                            if (!overlap) conflict = true;
                         } else {
                             conflict = true; // บล็อกฮีโร่เจาะจงค่าย ถ้าทัพเราไม่มีค่าย
                         }
@@ -265,8 +273,8 @@ export const findGlobalLeaders = (
                         let cleanName = leaderSheet.name
                             .toLowerCase()
                             .replace(/\b\w/g, (c: string) => c.toUpperCase())
-                            .replace(/'S\b/g, "'s"); 
-                        
+                            .replace(/'S\b/g, "'s");
+
                         foundLeaders.add(cleanName);
                     }
                 }
@@ -281,13 +289,13 @@ export const findGlobalLeaders = (
 // 🔍 4. หา Bodyguards ที่ Leader คนนี้จะไปนำได้
 // ==========================================
 export const findGlobalBodyguards = (
-    leaderName: string, 
-    armyFaction: string = "", 
+    leaderName: string,
+    armyFaction: string = "",
     unitFactionKeywords: string[] = [],
-    rosterUnits: any[] = [] 
+    rosterUnits: any[] = []
 ): string[] => {
     if (!leaderName) return [];
-    
+
     // ✅ ทำความสะอาดชื่อก่อนส่งค้นหา
     const normalizedLeader = cleanDatasheetName(leaderName);
     const foundBodyguards = new Set<string>();
@@ -309,22 +317,22 @@ export const findGlobalBodyguards = (
     rosterUnits.forEach(u => {
         if (u.factionKeywords) u.factionKeywords.forEach(checkAndAddChapter);
         if (u.keywords) u.keywords.forEach(checkAndAddChapter);
-        checkAndAddChapter(u.name); 
+        checkAndAddChapter(u.name);
     });
 
-    const leaderDatasheet = datasheetsData.find(d => 
+    const leaderDatasheet = datasheetsData.find(d =>
         cleanDatasheetName(d.name) === normalizedLeader && isValidUnit(d)
     );
-    
+
     if (leaderDatasheet) {
         const leaderId = leaderDatasheet.id;
         const matchedLinks = leaderData.filter(link => link.leader_id === leaderId);
 
         matchedLinks.forEach(link => {
             const bgSheet = datasheetsData.find(d => d.id === link.attached_id);
-            
-            if (bgSheet && isValidUnit(bgSheet)) { 
-                
+
+            if (bgSheet && isValidUnit(bgSheet)) {
+
                 // ✅ ปลดล็อกการค้นหา Chapter
                 const bgKeywords = keywordsData
                     .filter(k => k.datasheet_id === bgSheet.id)
@@ -333,13 +341,13 @@ export const findGlobalBodyguards = (
                 const bgChapters = smChapters.filter(ch => bgKeywords.some(lk => lk.includes(ch)));
 
                 let conflict = false;
-                
+
                 if (bgChapters.length > 0) {
                     if (myChapters.size > 0) {
                         const overlap = bgChapters.some(ch => myChapters.has(ch));
-                        if (!overlap) conflict = true; 
+                        if (!overlap) conflict = true;
                     } else {
-                        conflict = true; 
+                        conflict = true;
                     }
                 }
 
@@ -347,8 +355,8 @@ export const findGlobalBodyguards = (
                     let cleanName = bgSheet.name
                         .toLowerCase()
                         .replace(/\b\w/g, (c: string) => c.toUpperCase())
-                        .replace(/'S\b/g, "'s"); 
-                    
+                        .replace(/'S\b/g, "'s");
+
                     foundBodyguards.add(cleanName);
                 }
             }

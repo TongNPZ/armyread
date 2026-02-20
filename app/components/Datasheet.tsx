@@ -1,14 +1,40 @@
 // app/components/Datasheet.tsx
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { ArmyListUnit } from "../lib/parser/armyList/armyListTypes";
 import { getFactionColor } from "../lib/constants/factionColors";
 
-// ✅ Import ฟังก์ชันค้นหาทั้ง 2 แบบ
+// ✅ Import ฟังก์ชันค้นหาหัวหน้าระดับ Global 
 import { findGlobalLeaders, findGlobalBodyguards } from "../lib/wahapedia/lookup";
 
-import { RangedIcon, MeleeIcon, InvulnIcon, DamagedIcon } from "./datasheet/DatasheetIcons";
+import { RangedIcon, MeleeIcon, InvulnIcon } from "./datasheet/DatasheetIcons";
 import RuleInteractive from "./datasheet/RuleInteractive";
 import WeaponProfileRow, { ProcessedWeapon } from "./datasheet/WeaponProfileRow";
+
+// ==========================================
+// 💀 ไอคอนกระโหลก สำหรับสถานะ Damaged
+// ==========================================
+const SkullIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" className="w-[14px] h-[14px]">
+    <path d="M256 0C114.6 0 0 100.3 0 224c0 70.1 36.9 132.6 94.5 173.7 9.6 6.9 15.2 18.1 13.5 29.9l-9.4 66.2c-1.4 9.6 6 18.2 15.7 18.2H192v-56c0-4.4 3.6-8 8-8h16c4.4 0 8 3.6 8 8v56h64v-56c0-4.4 3.6-8 8-8h16c4.4 0 8 3.6 8 8v56h77.7c9.7 0 17.1-8.6 15.7-18.2l-9.4-66.2c-1.7-11.7 3.8-23 13.5-29.9C475.1 356.6 512 294.1 512 224 512 100.3 397.4 0 256 0zm-72 320c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48zm144 0c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z"/>
+  </svg>
+);
+
+// ==========================================
+// 📜 กฎ Official ของ Leader
+// ==========================================
+const LEADER_RULE_TEXT = `<em>Mighty heroes fight at the forefront of battle.</em><br/><br/>
+Some <strong>CHARACTER</strong> units have ‘Leader’ listed on their datasheets. Such <strong>CHARACTER</strong> units are known as Leaders, and the units they can lead – known as their Bodyguard units – are listed on their datasheet.<br/><br/>
+During the Declare Battle Formations step, for each Leader in your army, if your army also includes one or more of that Leader’s Bodyguard units, you can select one of those Bodyguard units. That Leader will then attach to that Bodyguard unit for the duration of the battle and is said to be leading that unit. Each Bodyguard unit can only have one Leader attached to it.<br/><br/>
+While a Bodyguard unit contains a Leader, it is known as an Attached unit and, with the exception of rules that are triggered when units are destroyed, it is treated as a single unit for all rules purposes. Each time an attack targets an Attached unit, until the attacking unit has resolved all of its attacks, you must use the Toughness characteristic of the Bodyguard models in that unit, even if a Leader in that unit has a different Toughness characteristic. Each time an attack sucessfully wounds an Attached unit, that attack cannot be allocated to a <strong>CHARACTER</strong> model in that unit, even if that <strong>CHARACTER</strong> model has lost one or more wounds or has already had attacks allocated to it this phase. As soon as the last Bodyguard model in an Attached unit has been destroyed, any attacks made against that unit that have yet to be allocated can then be allocated to <strong>CHARACTER</strong> models in that unit.<br/><br/>
+Each time the last model in a Bodyguard unit is destroyed, each <strong>CHARACTER</strong> unit that is part of that Attached unit is no longer part of an Attached unit. It becomes a separate unit, with its original Starting Strength. If this happens as the result of an attack, they become separate units after the attacking unit has resolved all of its attacks.<br/><br/>
+Each time the last model in a <strong>CHARACTER</strong> unit that is attached to a Bodyguard unit is destroyed and there is not another <strong>CHARACTER</strong> unit attached, that Attached unit’s Bodyguard unit is no longer part of an Attached unit. It becomes a separate unit, with its original Starting Strength. If this happens as the result of an attack, they become separate units after the attacking unit has resolved all of its attacks.<br/><br/>
+Each time a unit that is part of an Attached unit is destroyed, it does not have the keywords of any other units that make up that Attached unit (unless it has those keywords on its own datasheet) for the purposes of any rules that would be triggered when that unit is destroyed.<br/><br/>
+<strong>Example:</strong> If you only destroy the Bodyguard unit that is part of an Attached unit, you have not destroyed a <strong>CHARACTER</strong> unit. If you only destroy the <strong>CHARACTER</strong> unit that is part of an Attached unit, or if you destroy the whole Attached unit, you have destroyed one <strong>CHARACTER</strong> unit.<br/><br/>
+<div style="padding-left: 10px;">
+  &bull; Before the battle, <strong>CHARACTER</strong> units with the Leader ability can be attached to one of their Bodyguard units to form an Attached unit.<br/>
+  &bull; Attached units can only contain one Leader.<br/>
+  &bull; Attacks cannot be allocated to <strong>CHARACTER</strong> models in Attached units.
+</div>`;
 
 // ==========================================
 // MAIN COMPONENT
@@ -27,6 +53,23 @@ export default function Datasheet({
     description: string;
   } | null>(null);
 
+  const datasheetRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (datasheetRef.current) {
+      setTimeout(() => {
+        datasheetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        
+        const parentScroll = datasheetRef.current?.closest('.overflow-y-auto, .overflow-auto');
+        if (parentScroll) {
+          parentScroll.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 50); 
+    }
+  }, [unit.name]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setSelectedRule(null);
@@ -39,7 +82,13 @@ export default function Datasheet({
     const map: Record<string, string> = {};
     if (unit && unit.abilities) {
       Object.values(unit.abilities).flat().forEach((r) => {
-        if (r.description && r.description !== "-") map[r.name] = r.description;
+        if (r.description && r.description !== "-") {
+          if (r.name.toLowerCase() === "leader") {
+            map[r.name] = LEADER_RULE_TEXT;
+          } else {
+            map[r.name] = r.description;
+          }
+        }
       });
       unit.abilities["WeaponRules"]?.forEach((r) => {
         map[r.name] = r.description;
@@ -48,7 +97,14 @@ export default function Datasheet({
     return map;
   }, [unit]);
 
-  // 🚀 หา Leader ที่สามารถนำเราได้
+  const handleRuleClick = (name: string, description: string) => {
+    if (name.toLowerCase() === "leader") {
+      setSelectedRule({ name: "Leader", description: LEADER_RULE_TEXT });
+    } else {
+      setSelectedRule({ name, description });
+    }
+  };
+
   const actualLeaders = useMemo(() => {
     let leaders = findGlobalLeaders(unit.name, faction, unit.factionKeywords || [], rosterUnits || []);
 
@@ -66,7 +122,6 @@ export default function Datasheet({
     return Array.from(new Set(leaders)).sort();
   }, [unit.name, unit.abilities, faction, unit.factionKeywords, rosterUnits]); 
 
-  // 🚀 หา Bodyguards ที่เราสามารถไปนำได้ (Forward Lookup)
   const actualBodyguards = useMemo(() => {
     if (!unit.abilities?.["Leader"]) return [];
     let bodyguards = findGlobalBodyguards(unit.name, faction, unit.factionKeywords || [], rosterUnits || []);
@@ -127,16 +182,22 @@ export default function Datasheet({
   const rangedWeapons = processWeapons((r) => r !== "Melee");
   const meleeWeapons = processWeapons((r) => r === "Melee");
 
-  const handleRuleClick = (name: string, description: string) => {
-    setSelectedRule({ name, description });
-  };
-
-  const standardCategories = ["Core", "Faction", "Abilities", "Leader", "LedBy", "Invuln", "Damaged", "Wargear", "WeaponRules"];
+  const standardCategories = ["Core", "Faction", "Abilities", "Leader", "LedBy", "Invuln", "Damaged", "Wargear", "WeaponRules", "Transport"];
   const leftSideCategories = Object.keys(unit.abilities || {}).filter(cat => !standardCategories.includes(cat));
 
   const allAbilities = unit.abilities?.["Abilities"] || [];
+  const coreAbilities = unit.abilities?.["Core"] || [];
+
+  const transportAbilities = [
+    ...(unit.abilities?.["Transport"] || []),
+    ...(allAbilities.filter(a => a.name.toLowerCase() === "transport"))
+  ];
+
   const damagedRules = unit.abilities?.["Damaged"] || allAbilities.filter((a) => a.name.includes("Damaged:"));
-  const standardAbilities = allAbilities.filter((a) => !a.name.includes("Wargear") && !a.name.includes("Damaged:"));
+  
+  const standardAbilities = allAbilities.filter(
+    (a) => !a.name.includes("Wargear") && !a.name.includes("Damaged:") && a.name.toLowerCase() !== "transport"
+  );
 
   const baseInvulns = unit.abilities?.["Invuln"] || [];
   let displayInvulns = [];
@@ -155,9 +216,10 @@ export default function Datasheet({
   const hasLeaderAbilities = (unit.abilities?.["Leader"]?.length ?? 0) > 0;
   const hasLedByAbilities = (unit.abilities?.["LedBy"]?.length ?? 0) > 0;
   const hasActualLeaders = actualLeaders.length > 0;
+  const hasTransport = transportAbilities.length > 0;
 
   return (
-    <div className="w-full bg-white text-zinc-900 shadow-xl font-sans mb-4 border-2 border-zinc-800 relative">
+    <div ref={datasheetRef} className="scroll-mt-24 w-full bg-white text-zinc-900 shadow-xl font-sans mb-4 border-2 border-zinc-800 relative">
       {/* MODAL */}
       {selectedRule && (
         <div
@@ -316,13 +378,17 @@ export default function Datasheet({
             )}
           </div>
 
-          {/* KEYWORDS FOOTER */}
+          {/* ======================================= */}
+          {/* KEYWORDS FOOTER (LEFT)                  */}
+          {/* ======================================= */}
           <div className="mt-auto">
-            <div className="bg-[#e4e4e4] p-2.5 px-3 border-t border-zinc-400">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="font-bold text-[11px] text-zinc-600 uppercase tracking-wide">Faction:</span>
-                {unit.factionKeywords?.map((kw, i) => (
-                  <span key={i} className="text-[10px] font-bold bg-zinc-700 text-white px-2 py-0.5 rounded-sm uppercase tracking-wider">{kw}</span>
+            <div className="bg-[#e4e4e4] p-3 border-t-2 border-zinc-400">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-black text-[13px] text-zinc-800 uppercase tracking-widest">Keywords:</span>
+                {unit.keywords?.map((kw, i) => (
+                  <span key={i} className="text-[11px] font-bold bg-white text-zinc-800 px-2 py-0.5 rounded-sm uppercase tracking-wider border border-zinc-400 shadow-sm">
+                    {kw}
+                  </span>
                 ))}
               </div>
             </div>
@@ -336,13 +402,19 @@ export default function Datasheet({
             Abilities
           </div>
           <div className="p-2.5 space-y-2.5 text-[13px] sm:text-[14px]">
-            {unit.abilities?.["Core"]?.length ? (
+            {/* ✅ 3. สั่งให้ RuleInteractive ดึงข้อความจาก ruleMap ไปโชว์ใน Tooltip ด้วย! */}
+            {coreAbilities.length ? (
               <div className="pb-3 border-b border-zinc-300">
                 <span className="font-black text-zinc-500 uppercase text-[11px] mr-2">CORE:</span>
-                {unit.abilities["Core"].map((r, i) => (
+                {coreAbilities.map((r, i) => (
                   <span key={i}>
-                    <RuleInteractive name={r.name} description={r.description} onClick={handleRuleClick} ruleMap={ruleMap} />
-                    {i < unit.abilities!["Core"].length - 1 && <span className="mr-1.5 text-zinc-500">,</span>}
+                    <RuleInteractive 
+                      name={r.name} 
+                      description={ruleMap[r.name] || r.description} 
+                      onClick={handleRuleClick} 
+                      ruleMap={ruleMap} 
+                    />
+                    {i < coreAbilities.length - 1 && <span className="mr-1.5 text-zinc-500">,</span>}
                   </span>
                 ))}
               </div>
@@ -353,7 +425,12 @@ export default function Datasheet({
                 <span className="font-black text-zinc-500 uppercase text-[11px] mr-2">FACTION:</span>
                 {unit.abilities["Faction"].map((r, i) => (
                   <span key={i}>
-                    <RuleInteractive name={r.name} description={r.description} onClick={handleRuleClick} ruleMap={ruleMap} />
+                    <RuleInteractive 
+                      name={r.name} 
+                      description={ruleMap[r.name] || r.description} 
+                      onClick={handleRuleClick} 
+                      ruleMap={ruleMap} 
+                    />
                     {i < unit.abilities!["Faction"].length - 1 && <span className="mr-1.5 text-zinc-500"> </span>}
                   </span>
                 ))}
@@ -372,7 +449,9 @@ export default function Datasheet({
                 <div className="flex justify-between items-center text-white px-3 py-1.5" style={{ backgroundColor: primaryColor }}>
                   <span className="text-[13px] font-bold uppercase tracking-wider truncate mr-2">{rule.name}</span>
                   <div className="flex items-center gap-1.5 px-2 py-0.5 shrink-0 bg-black/20 rounded">
-                    <span className="opacity-90"><DamagedIcon /></span>
+                    <span className="opacity-90 text-yellow-400">
+                      <SkullIcon />
+                    </span>
                     <span className="text-[10px] font-black text-yellow-400 tracking-wide">ACTIVE</span>
                   </div>
                 </div>
@@ -393,8 +472,6 @@ export default function Datasheet({
                 
                 {/* --- 1. สำหรับ Character (Leader) --- */}
                 {unit.abilities?.["Leader"]?.map((rule, rIdx) => {
-                  
-                  // แยกประโยคเงื่อนไขพิเศษออกมา (เช่น "You can attach this model even if...")
                   const lines = rule.description.split(/(?:<br\s*\/?>|\n)+/);
                   const extraRulesText = lines.filter(line => {
                       const t = line.trim();
@@ -403,7 +480,6 @@ export default function Datasheet({
                       return true;
                   });
 
-                  // กำหนดรายชื่อลูกน้องที่จะแสดง
                   let displayBodyguards = actualBodyguards;
                   if (displayBodyguards.length === 0) {
                       displayBodyguards = lines
@@ -417,7 +493,6 @@ export default function Datasheet({
                       <div className="font-bold mb-1 uppercase text-zinc-900 text-[11px]">Leader</div>
                       <div className="text-zinc-800 mb-2 font-medium leading-tight">This model can be attached to the following units:</div>
                       
-                      {/* ✅ 2 คอลัมน์, ฟอนต์บาง, Bullet สีเทา, ตรงแนวกันเป๊ะ */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-zinc-700 text-[13px] leading-snug">
                         {displayBodyguards.map((bg, idx) => (
                           <div key={idx} className="flex items-start gap-1.5">
@@ -427,7 +502,6 @@ export default function Datasheet({
                         ))}
                       </div>
 
-                      {/* ✅ แสดงกฎเสริมด้านล่าง (ถ้ามี) */}
                       {extraRulesText.length > 0 && (
                         <div className="mt-2 text-zinc-700 text-[13px] leading-relaxed border-t border-zinc-200 pt-2">
                           {extraRulesText.map((txt, idx) => (
@@ -445,7 +519,6 @@ export default function Datasheet({
                     <div className="font-bold mb-1 uppercase text-zinc-900 text-[11px]">LED BY</div>
                     <div className="text-zinc-800 mb-2 font-medium leading-tight">This unit can be led by the following units:</div>
                     
-                    {/* ✅ 2 คอลัมน์, ฟอนต์บาง เหมือนกับ Leader ด้านบน */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-zinc-700 text-[13px] leading-snug">
                       {actualLeaders.map((leader, idx) => {
                         const text = leader.replace(/■|•/g, '').trim(); 
@@ -502,6 +575,44 @@ export default function Datasheet({
             </>
           ) : null}
 
+          {/* ======================================= */}
+          {/* SECTION 2.5: TRANSPORT                  */}
+          {/* ======================================= */}
+          {hasTransport ? (
+            <>
+              <div className="px-3 py-1.5 text-white text-[13px] tracking-wide font-bold uppercase shadow-sm mt-3" style={{ backgroundColor: primaryColor }}>
+                Transport
+              </div>
+              <div className="p-2.5 space-y-2.5 text-[13px] sm:text-[14px]">
+                {transportAbilities.map((rule, rIdx) => {
+                  const lines = rule.description.split(/(?:<br\s*\/?>|\n)+/).filter(i => i.trim() !== '');
+                  return (
+                    <div key={`transport-${rIdx}`} className="bg-white p-2.5 shadow-sm border border-zinc-200 rounded-sm">
+                      {rule.name.toLowerCase() !== "transport" && (
+                        <div className="font-bold mb-1.5 uppercase text-zinc-900 text-[11px]">{rule.name}</div>
+                      )}
+                      <div className="flex flex-col gap-1.5 text-zinc-700 text-[13px] leading-relaxed">
+                        {lines.map((item, idx) => {
+                          if (item.trim().startsWith('■') || item.trim().startsWith('•')) {
+                            const text = item.replace(/■|•/g, '').trim();
+                            if (!text) return null;
+                            return (
+                              <div key={idx} className="flex items-start gap-1.5">
+                                <span className="text-zinc-400 text-[10px] mt-[3px]">■</span>
+                                <span dangerouslySetInnerHTML={{ __html: text }} />
+                              </div>
+                            );
+                          }
+                          return <div key={idx} dangerouslySetInnerHTML={{ __html: item }} />;
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : null}
+
           <div className="flex-grow"></div>
 
           {displayInvulns.map((rule, i) => (
@@ -516,12 +627,15 @@ export default function Datasheet({
             </div>
           ))}
 
+          {/* ======================================= */}
+          {/* FACTION KEYWORDS FOOTER (RIGHT)         */}
+          {/* ======================================= */}
           <div className="mt-auto">
-            <div className="bg-[#d4d4d4] p-2.5 px-3 border-t border-zinc-300">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="font-bold text-[11px] text-zinc-600 uppercase tracking-wide">Faction:</span>
+            <div className="bg-[#d4d4d4] p-3 border-t-2 border-zinc-400">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-black text-[13px] text-zinc-800 uppercase tracking-widest">Faction Keywords:</span>
                 {unit.factionKeywords?.map((kw, i) => (
-                  <span key={i} className="text-[10px] font-bold bg-zinc-700 text-white px-2 py-0.5 rounded-sm uppercase tracking-wider">{kw}</span>
+                  <span key={i} className="text-[11px] font-bold bg-zinc-800 text-white px-2 py-0.5 rounded-sm uppercase tracking-wider shadow-sm">{kw}</span>
                 ))}
               </div>
             </div>
