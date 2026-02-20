@@ -1,3 +1,4 @@
+// app/lib/parser/armyList/armyListHelpers.ts
 import type { SelectionNode, Profile } from "../roster/rosterImportTypes"
 import type { ArmyListWeapon, WeaponProfile, StatItem, AbilityRule } from "./armyListTypes"
 
@@ -14,7 +15,7 @@ function parseKeywords(keywordString: string): string[] {
     return keywordString.split(",").map(k => k.trim()).filter(k => k.length > 0)
 }
 
-// --- 1. Get Unit Stats (M, T, SV, W, LD, OC) ---
+// --- 1. Get Unit Stats ---
 export function getUnitStats(node: SelectionNode): StatItem[] {
     const unitProfile = node.profiles?.find(p => p.typeName === "Unit")
     if (!unitProfile) return []
@@ -34,7 +35,7 @@ export function getUnitStats(node: SelectionNode): StatItem[] {
     }).filter((s): s is StatItem => s !== null)
 }
 
-// --- 2. Get Weapon Stats (with Grouping Logic) ---
+// --- 2. Get Weapon Stats ---
 export function getWeaponStats(weaponNode: SelectionNode): ArmyListWeapon[] {
     const profiles: WeaponProfile[] = []
 
@@ -76,7 +77,6 @@ export function getWeaponStats(weaponNode: SelectionNode): ArmyListWeapon[] {
 
 // --- 3. Rules Collection & Categorization ---
 
-// ✅ Helper ใหม่: หาคำอธิบายโดยไล่เช็ค Description -> Effect -> Ability
 function findDescription(p: Profile): string | null {
     const fields = ["Description", "Effect", "Ability"];
     for (const field of fields) {
@@ -87,36 +87,26 @@ function findDescription(p: Profile): string | null {
 }
 
 function collectAllRules(node: SelectionNode, collected: Map<string, { description: string, typeName: string }>) {
-    // 1. Rules (Node level) -> ถือว่าเป็น Ability ทั่วไป
     node.rules?.forEach(r => {
         if (r.name && r.description) {
             collected.set(r.name, { description: r.description, typeName: "Abilities" });
         }
     });
 
-    // 2. Profiles -> เช็คทุกประเภทที่ไม่ใช่ Unit/Weapon/Model
     node.profiles?.forEach(p => {
         const rawTypeName = (p as any).typeName || p.typeName || "Unknown";
         const typeName = typeof rawTypeName === 'string' ? rawTypeName.trim() : "Unknown";
 
-        const excludedTypes = ["Unit", "Model", "Ranged Weapons", "Melee Weapons"];
-
+        // ✅ ป้องกัน "LedBy" ไปโผล่เป็นกล่องเขียวด้านซ้าย
+        const excludedTypes = ["Unit", "Model", "Ranged Weapons", "Melee Weapons", "LedBy"];
         if (!excludedTypes.includes(typeName)) {
-            // ✅ FIX: ใช้ฟังก์ชันหา Description ที่ฉลาดขึ้น (แก้ปัญหา "-" บัง Effect)
             const desc = findDescription(p);
-
             if (p.name && desc) {
-                // Debug: เช็คว่าเจอ Custom Rule ไหม (ดูใน Browser Console F12)
-                if (typeName !== "Abilities" && typeName !== "Wargear" && typeName !== "Rule") {
-                    console.log(`[ArmyHelpers] Found Custom Rule: "${p.name}", Type: "${typeName}", Desc: "${desc.substring(0, 20)}..."`);
-                }
-
                 collected.set(p.name, { description: desc, typeName: typeName });
             }
         }
     });
 
-    // 3. Recursive
     node.selections?.forEach(child => {
         collectAllRules(child, collected);
     });
@@ -128,17 +118,16 @@ export function getAbilitiesAndKeywords(node: SelectionNode) {
         "Faction": [],
         "Abilities": [],
         "Leader": [],
+        "LedBy": [], // ✅ เพิ่มหมวดใหม่
         "Invuln": [],
         "Damaged": [],
         "Wargear": [],
         "WeaponRules": []
     }
 
-    // 1. รวบรวม Rules ทั้งหมดพร้อม TypeName
     const allRulesMap = new Map<string, { description: string, typeName: string }>();
     collectAllRules(node, allRulesMap);
 
-    // 2. แยกหมวดหมู่ (Sorting Logic)
     allRulesMap.forEach((val, name) => {
         const { description, typeName } = val;
         const lowerName = name.toLowerCase();
@@ -152,16 +141,17 @@ export function getAbilitiesAndKeywords(node: SelectionNode) {
             abilities["Damaged"].push({ name, description });
             return;
         }
-        // ✅ เปลี่ยนมาใช้ lowerName === "leader" เพื่อกันปัญหาตัวพิมพ์เล็ก/ใหญ่
-        if (lowerName === "leader" || lowerName.includes("attached unit")) {
-            // จับใส่กล่อง Leader เพื่อไปสร้างกล่องรายชื่อ Unit ด้านล่าง
-            abilities["Leader"].push({ name, description });
 
-            // ✅ ก๊อปปี้เฉพาะคำว่า "Leader" ไปใส่กล่อง Core ด้วย! 
-            // เพื่อให้มันโชว์ในบรรทัด CORE: Leader และมี Popup Tooltip ให้จิ้มดูรายชื่อได้
-            if (lowerName === "leader") {
-                abilities["Core"].push({ name, description });
-            }
+        // ✅ แยก Leader กับ Attached Unit (Led By) ออกจากกัน
+        if (lowerName === "leader") {
+            abilities["Leader"].push({ name, description });
+            abilities["Core"].push({ name, description }); // โชว์ในบรรทัด CORE: Leader
+            return;
+        }
+
+        // ✅ ดักจับพวกกฎรายชื่อหัวหน้าของยูนิตลูกน้อง
+        if (lowerName.includes("attached unit") || lowerName.includes("led by")) {
+            abilities["LedBy"].push({ name, description });
             return;
         }
 
@@ -203,20 +193,25 @@ export function getAbilitiesAndKeywords(node: SelectionNode) {
             typeName !== "Abilities" &&
             typeName !== "Rule" &&
             typeName !== "Wargear" &&
-            typeName !== "Unknown"
+            typeName !== "Unknown" &&
+            typeName !== "LedBy" // ✅ กัน LedBy โผล่ซ้าย
         ) {
             if (!abilities[typeName]) {
                 abilities[typeName] = [];
             }
             abilities[typeName].push({ name, description });
         } else {
-            abilities["Abilities"].push({ name, description });
+            // คัดแยกอีกที ถ้าชื่อเป็น LedBy ให้ลงกล่อง LedBy
+            if (typeName === "LedBy") {
+                abilities["LedBy"].push({ name, description });
+            } else {
+                abilities["Abilities"].push({ name, description });
+            }
         }
     });
 
     // 3. Keywords Logic
     const allKeywords = node.categories?.map(c => c.name ?? "") ?? []
-
     const factionKeywords = allKeywords.filter(k =>
         k.startsWith("Faction:") ||
         k.includes("Adeptus") || k.includes("Heretic") ||
