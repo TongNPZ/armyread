@@ -3,8 +3,8 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { ArmyListUnit } from "../lib/parser/armyList/armyListTypes";
 import { getFactionColor } from "../lib/constants/factionColors";
 
-// ✅ Import ฟังก์ชันค้นหาหัวหน้าระดับ Global 
-import { findGlobalLeaders, findGlobalBodyguards } from "../lib/wahapedia/lookup";
+// ✅ Import getAbilityDescription เพื่อดึงข้อมูล JSON จาก Waha ล้วนๆ
+import { findGlobalLeaders, findGlobalBodyguards, getAbilityDescription } from "../lib/wahapedia/lookup";
 
 import { RangedIcon, MeleeIcon, InvulnIcon } from "./datasheet/DatasheetIcons";
 import RuleInteractive from "./datasheet/RuleInteractive";
@@ -15,26 +15,9 @@ import WeaponProfileRow, { ProcessedWeapon } from "./datasheet/WeaponProfileRow"
 // ==========================================
 const SkullIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" className="w-[14px] h-[14px]">
-    <path d="M256 0C114.6 0 0 100.3 0 224c0 70.1 36.9 132.6 94.5 173.7 9.6 6.9 15.2 18.1 13.5 29.9l-9.4 66.2c-1.4 9.6 6 18.2 15.7 18.2H192v-56c0-4.4 3.6-8 8-8h16c4.4 0 8 3.6 8 8v56h64v-56c0-4.4 3.6-8 8-8h16c4.4 0 8 3.6 8 8v56h77.7c9.7 0 17.1-8.6 15.7-18.2l-9.4-66.2c-1.7-11.7 3.8-23 13.5-29.9C475.1 356.6 512 294.1 512 224 512 100.3 397.4 0 256 0zm-72 320c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48zm144 0c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z"/>
+    <path d="M256 0C114.6 0 0 100.3 0 224c0 70.1 36.9 132.6 94.5 173.7 9.6 6.9 15.2 18.1 13.5 29.9l-9.4 66.2c-1.4 9.6 6 18.2 15.7 18.2H192v-56c0-4.4 3.6-8 8-8h16c4.4 0 8 3.6 8 8v56h64v-56c0-4.4 3.6-8 8-8h16c4.4 0 8 3.6 8 8v56h77.7c9.7 0 17.1-8.6 15.7-18.2l-9.4-66.2c-1.7-11.7 3.8-23 13.5-29.9C475.1 356.6 512 294.1 512 224 512 100.3 397.4 0 256 0zm-72 320c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48zm144 0c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" />
   </svg>
 );
-
-// ==========================================
-// 📜 กฎ Official ของ Leader
-// ==========================================
-const LEADER_RULE_TEXT = `<em>Mighty heroes fight at the forefront of battle.</em><br/><br/>
-Some <strong>CHARACTER</strong> units have ‘Leader’ listed on their datasheets. Such <strong>CHARACTER</strong> units are known as Leaders, and the units they can lead – known as their Bodyguard units – are listed on their datasheet.<br/><br/>
-During the Declare Battle Formations step, for each Leader in your army, if your army also includes one or more of that Leader’s Bodyguard units, you can select one of those Bodyguard units. That Leader will then attach to that Bodyguard unit for the duration of the battle and is said to be leading that unit. Each Bodyguard unit can only have one Leader attached to it.<br/><br/>
-While a Bodyguard unit contains a Leader, it is known as an Attached unit and, with the exception of rules that are triggered when units are destroyed, it is treated as a single unit for all rules purposes. Each time an attack targets an Attached unit, until the attacking unit has resolved all of its attacks, you must use the Toughness characteristic of the Bodyguard models in that unit, even if a Leader in that unit has a different Toughness characteristic. Each time an attack sucessfully wounds an Attached unit, that attack cannot be allocated to a <strong>CHARACTER</strong> model in that unit, even if that <strong>CHARACTER</strong> model has lost one or more wounds or has already had attacks allocated to it this phase. As soon as the last Bodyguard model in an Attached unit has been destroyed, any attacks made against that unit that have yet to be allocated can then be allocated to <strong>CHARACTER</strong> models in that unit.<br/><br/>
-Each time the last model in a Bodyguard unit is destroyed, each <strong>CHARACTER</strong> unit that is part of that Attached unit is no longer part of an Attached unit. It becomes a separate unit, with its original Starting Strength. If this happens as the result of an attack, they become separate units after the attacking unit has resolved all of its attacks.<br/><br/>
-Each time the last model in a <strong>CHARACTER</strong> unit that is attached to a Bodyguard unit is destroyed and there is not another <strong>CHARACTER</strong> unit attached, that Attached unit’s Bodyguard unit is no longer part of an Attached unit. It becomes a separate unit, with its original Starting Strength. If this happens as the result of an attack, they become separate units after the attacking unit has resolved all of its attacks.<br/><br/>
-Each time a unit that is part of an Attached unit is destroyed, it does not have the keywords of any other units that make up that Attached unit (unless it has those keywords on its own datasheet) for the purposes of any rules that would be triggered when that unit is destroyed.<br/><br/>
-<strong>Example:</strong> If you only destroy the Bodyguard unit that is part of an Attached unit, you have not destroyed a <strong>CHARACTER</strong> unit. If you only destroy the <strong>CHARACTER</strong> unit that is part of an Attached unit, or if you destroy the whole Attached unit, you have destroyed one <strong>CHARACTER</strong> unit.<br/><br/>
-<div style="padding-left: 10px;">
-  &bull; Before the battle, <strong>CHARACTER</strong> units with the Leader ability can be attached to one of their Bodyguard units to form an Attached unit.<br/>
-  &bull; Attached units can only contain one Leader.<br/>
-  &bull; Attacks cannot be allocated to <strong>CHARACTER</strong> models in Attached units.
-</div>`;
 
 // ==========================================
 // MAIN COMPONENT
@@ -42,7 +25,7 @@ Each time a unit that is part of an Attached unit is destroyed, it does not have
 export default function Datasheet({
   unit,
   faction,
-  rosterUnits, 
+  rosterUnits,
 }: {
   unit: ArmyListUnit;
   faction?: string;
@@ -59,14 +42,14 @@ export default function Datasheet({
     if (datasheetRef.current) {
       setTimeout(() => {
         datasheetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        
+
         const parentScroll = datasheetRef.current?.closest('.overflow-y-auto, .overflow-auto');
         if (parentScroll) {
           parentScroll.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-      }, 50); 
+      }, 50);
     }
   }, [unit.name]);
 
@@ -78,31 +61,50 @@ export default function Datasheet({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedRule]);
 
+  // ✅ 1. ฟังก์ชันดึงกฎจาก lookup.ts แบบเพียวๆ
+  const getWahaRule = (name: string, originalDesc: string) => {
+    if (!name) return originalDesc;
+    
+    const wahaDesc = getAbilityDescription(name, true);
+    return wahaDesc || originalDesc;
+  };
+
+  // ✅ 2. สร้าง ruleMap
   const ruleMap: Record<string, string> = useMemo(() => {
     const map: Record<string, string> = {};
+
     if (unit && unit.abilities) {
       Object.values(unit.abilities).flat().forEach((r) => {
         if (r.description && r.description !== "-") {
-          if (r.name.toLowerCase() === "leader") {
-            map[r.name] = LEADER_RULE_TEXT;
-          } else {
-            map[r.name] = r.description;
-          }
+          map[r.name] = getWahaRule(r.name, r.description);
         }
       });
       unit.abilities["WeaponRules"]?.forEach((r) => {
-        map[r.name] = r.description;
+        map[r.name] = getWahaRule(r.name, r.description);
       });
     }
+
+    // กวาดเก็บกฎของอาวุธทั้งหมดเพื่อเตรียมส่งให้ Tooltip
+    const models = unit.models || [];
+    models.forEach(m => {
+      m.weapons?.forEach(w => {
+        w.profiles.forEach(p => {
+          const rawAbilities = (p as any).abilities || [];
+          rawAbilities.forEach((ab: any) => {
+            if (ab && ab.name) {
+              map[ab.name] = getWahaRule(ab.name, ab.description || "");
+            }
+          });
+        });
+      });
+    });
+
     return map;
   }, [unit]);
 
   const handleRuleClick = (name: string, description: string) => {
-    if (name.toLowerCase() === "leader") {
-      setSelectedRule({ name: "Leader", description: LEADER_RULE_TEXT });
-    } else {
-      setSelectedRule({ name, description });
-    }
+    const finalDesc = ruleMap[name] || getWahaRule(name, description);
+    setSelectedRule({ name, description: finalDesc });
   };
 
   const actualLeaders = useMemo(() => {
@@ -114,13 +116,13 @@ export default function Datasheet({
         const match = desc.match(/can be attached to (?:an? )?(.+?), it can be attached/i);
         if (match) {
           const proxyTarget = match[1].replace(/ unit$/i, '').trim();
-          const proxyLeaders = findGlobalLeaders(proxyTarget, faction, unit.factionKeywords || [], rosterUnits || []); 
+          const proxyLeaders = findGlobalLeaders(proxyTarget, faction, unit.factionKeywords || [], rosterUnits || []);
           leaders = [...leaders, ...proxyLeaders];
         }
       });
     }
     return Array.from(new Set(leaders)).sort();
-  }, [unit.name, unit.abilities, faction, unit.factionKeywords, rosterUnits]); 
+  }, [unit.name, unit.abilities, faction, unit.factionKeywords, rosterUnits]);
 
   const actualBodyguards = useMemo(() => {
     if (!unit.abilities?.["Leader"]) return [];
@@ -131,7 +133,6 @@ export default function Datasheet({
   if (!unit) return null;
 
   const primaryColor = getFactionColor(faction);
-
   const models = unit.models || [];
   const stats = unit.stats || [];
   const sortedStats = [...stats].sort(
@@ -140,6 +141,7 @@ export default function Datasheet({
       ["M", "T", "SV", "W", "LD", "OC"].indexOf(b.name),
   );
 
+  // ✅ 3. ทุบหม้อข้าว! Override คำอธิบายอาวุธให้ใช้จาก Waha ก่อนส่งให้ UI
   const processWeapons = (
     rangeFilter: (r: string) => boolean,
   ): ProcessedWeapon[] => {
@@ -162,6 +164,13 @@ export default function Datasheet({
               displayName = p.name;
             }
 
+            // 🔥 เปลี่ยน description ของอาวุธให้เป็น Waha JSON
+            const rawAbilities = (p as any).abilities || [];
+            const enrichedAbilities = rawAbilities.map((ab: any) => ({
+              ...ab,
+              description: ruleMap[ab.name] || getWahaRule(ab.name, ab.description)
+            }));
+
             const existing = result.find(
               (r) => r.displayName === displayName && r.range === p.range && r.attacks === p.attacks &&
                 r.skill === p.skill && r.strength === p.strength && r.ap === p.ap && r.damage === p.damage,
@@ -170,7 +179,12 @@ export default function Datasheet({
             if (existing) {
               existing.count += w.count;
             } else {
-              result.push({ ...p, displayName: displayName, count: w.count });
+              result.push({ 
+                ...p, 
+                abilities: enrichedAbilities, 
+                displayName: displayName, 
+                count: w.count 
+              } as ProcessedWeapon);
             }
           }
         });
@@ -194,7 +208,7 @@ export default function Datasheet({
   ];
 
   const damagedRules = unit.abilities?.["Damaged"] || allAbilities.filter((a) => a.name.includes("Damaged:"));
-  
+
   const standardAbilities = allAbilities.filter(
     (a) => !a.name.includes("Wargear") && !a.name.includes("Damaged:") && a.name.toLowerCase() !== "transport"
   );
@@ -217,6 +231,7 @@ export default function Datasheet({
   const hasLedByAbilities = (unit.abilities?.["LedBy"]?.length ?? 0) > 0;
   const hasActualLeaders = actualLeaders.length > 0;
   const hasTransport = transportAbilities.length > 0;
+  const hasDamaged = damagedRules.length > 0;
 
   return (
     <div ref={datasheetRef} className="scroll-mt-24 w-full bg-white text-zinc-900 shadow-xl font-sans mb-4 border-2 border-zinc-800 relative">
@@ -368,7 +383,8 @@ export default function Datasheet({
                         <div key={rIdx} className="mb-2 last:mb-0 pl-3 relative">
                           <span className="absolute left-0 top-0 font-bold text-zinc-400">•</span>
                           <strong className="text-black font-bold uppercase block mb-1">{rule.name}:</strong>
-                          <div className="wahapedia-content" dangerouslySetInnerHTML={{ __html: rule.description }} />
+                          {/* ตรงนี้ใช้ ruleMap เป็นหลัก */}
+                          <div className="wahapedia-content" dangerouslySetInnerHTML={{ __html: ruleMap[rule.name] || rule.description }} />
                         </div>
                       ))}
                     </div>
@@ -398,21 +414,24 @@ export default function Datasheet({
         {/* RIGHT: ABILITIES */}
         <div className="lg:w-[35%] flex flex-col bg-[#f4f4f5]">
 
+          {/* ======================================= */}
+          {/* SECTION 1: ABILITIES                    */}
+          {/* ======================================= */}
           <div className="px-3 py-1.5 text-white text-[13px] tracking-wide font-bold uppercase shadow-sm" style={{ backgroundColor: primaryColor }}>
             Abilities
           </div>
+
           <div className="p-2.5 space-y-2.5 text-[13px] sm:text-[14px]">
-            {/* ✅ 3. สั่งให้ RuleInteractive ดึงข้อความจาก ruleMap ไปโชว์ใน Tooltip ด้วย! */}
             {coreAbilities.length ? (
               <div className="pb-3 border-b border-zinc-300">
                 <span className="font-black text-zinc-500 uppercase text-[11px] mr-2">CORE:</span>
                 {coreAbilities.map((r, i) => (
                   <span key={i}>
-                    <RuleInteractive 
-                      name={r.name} 
-                      description={ruleMap[r.name] || r.description} 
-                      onClick={handleRuleClick} 
-                      ruleMap={ruleMap} 
+                    <RuleInteractive
+                      name={r.name}
+                      description={ruleMap[r.name] || r.description}
+                      onClick={handleRuleClick}
+                      ruleMap={ruleMap}
                     />
                     {i < coreAbilities.length - 1 && <span className="mr-1.5 text-zinc-500">,</span>}
                   </span>
@@ -425,11 +444,11 @@ export default function Datasheet({
                 <span className="font-black text-zinc-500 uppercase text-[11px] mr-2">FACTION:</span>
                 {unit.abilities["Faction"].map((r, i) => (
                   <span key={i}>
-                    <RuleInteractive 
-                      name={r.name} 
-                      description={ruleMap[r.name] || r.description} 
-                      onClick={handleRuleClick} 
-                      ruleMap={ruleMap} 
+                    <RuleInteractive
+                      name={r.name}
+                      description={ruleMap[r.name] || r.description}
+                      onClick={handleRuleClick}
+                      ruleMap={ruleMap}
                     />
                     {i < unit.abilities!["Faction"].length - 1 && <span className="mr-1.5 text-zinc-500"> </span>}
                   </span>
@@ -440,59 +459,73 @@ export default function Datasheet({
             {standardAbilities.map((rule, rIdx) => (
               <div key={rIdx} className="bg-white p-2.5 shadow-sm border border-zinc-200">
                 <div className="font-bold text-zinc-900 text-[13px] sm:text-[14px] uppercase tracking-wide">{rule.name}</div>
-                <div className="wahapedia-content text-[13px] sm:text-[14px] text-zinc-700 leading-relaxed mt-1" dangerouslySetInnerHTML={{ __html: rule.description }} />
-              </div>
-            ))}
-
-            {damagedRules.map((rule, i) => (
-              <div key={i} className="shadow-sm overflow-hidden border border-zinc-300 rounded-sm">
-                <div className="flex justify-between items-center text-white px-3 py-1.5" style={{ backgroundColor: primaryColor }}>
-                  <span className="text-[13px] font-bold uppercase tracking-wider truncate mr-2">{rule.name}</span>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 shrink-0 bg-black/20 rounded">
-                    <span className="opacity-90 text-yellow-400">
-                      <SkullIcon />
-                    </span>
-                    <span className="text-[10px] font-black text-yellow-400 tracking-wide">ACTIVE</span>
-                  </div>
-                </div>
-                <div className="wahapedia-content p-2.5 bg-white text-[13px] sm:text-[14px] text-zinc-800 leading-relaxed border-t border-zinc-200" dangerouslySetInnerHTML={{ __html: rule.description }} />
+                <div className="wahapedia-content text-[13px] sm:text-[14px] text-zinc-700 leading-relaxed mt-1" dangerouslySetInnerHTML={{ __html: ruleMap[rule.name] || rule.description }} />
               </div>
             ))}
           </div>
+
+          {/* ======================================= */}
+          {/* SECTION 1.5: DAMAGED                    */}
+          {/* ======================================= */}
+          {hasDamaged ? (
+            <>
+              {damagedRules.map((rule, rIdx) => (
+                <div key={`damaged-${rIdx}`}>
+                  <div className="px-3 py-1.5 text-white text-[13px] tracking-wide font-bold uppercase shadow-sm mt-1 flex justify-between items-center" style={{ backgroundColor: primaryColor }}>
+                    <span>{rule.name}</span>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 shrink-0 bg-black/20 rounded">
+                      <span className="opacity-90 text-yellow-400">
+                        <SkullIcon />
+                      </span>
+                      <span className="text-[10px] font-black text-yellow-400 tracking-wide">ACTIVE</span>
+                    </div>
+                  </div>
+                  <div className="p-2.5 space-y-2.5 text-[13px] sm:text-[14px]">
+                    <div className="bg-white p-2.5 shadow-sm border border-zinc-200 rounded-sm">
+                      <div className="wahapedia-content text-zinc-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: ruleMap[rule.name] || rule.description }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : null}
 
           {/* ======================================= */}
           {/* SECTION 2: LEADER / ATTACHED            */}
           {/* ======================================= */}
           {(hasLeaderAbilities || hasLedByAbilities || hasActualLeaders) ? (
             <>
-              <div className="px-3 py-1.5 text-white text-[13px] tracking-wide font-bold uppercase shadow-sm mt-3" style={{ backgroundColor: primaryColor }}>
+              <div className="px-3 py-1.5 text-white text-[13px] tracking-wide font-bold uppercase shadow-sm mt-1" style={{ backgroundColor: primaryColor }}>
                 Leader / Attached
               </div>
               <div className="p-2.5 space-y-2.5 text-[13px] sm:text-[14px]">
-                
+
                 {/* --- 1. สำหรับ Character (Leader) --- */}
                 {unit.abilities?.["Leader"]?.map((rule, rIdx) => {
+                  
+                  // 🚨 แก้ไข: ตรงนี้กลับมาใช้ rule.description ของตัวมันเอง!
                   const lines = rule.description.split(/(?:<br\s*\/?>|\n)+/);
+                  
                   const extraRulesText = lines.filter(line => {
-                      const t = line.trim();
-                      if (!t || t.toLowerCase() === 'leader' || t.toLowerCase().includes('this model can be attached')) return false;
-                      if (t.startsWith('■') || t.startsWith('•')) return false;
-                      return true;
+                    const t = line.trim();
+                    if (!t || t.toLowerCase() === 'leader' || t.toLowerCase().includes('this model can be attached')) return false;
+                    if (t.startsWith('■') || t.startsWith('•')) return false;
+                    return true;
                   });
 
                   let displayBodyguards = actualBodyguards;
                   if (displayBodyguards.length === 0) {
-                      displayBodyguards = lines
-                          .filter(line => line.trim().startsWith('■') || line.trim().startsWith('•'))
-                          .map(line => line.replace(/■|•/g, '').trim())
-                          .filter(Boolean);
+                    displayBodyguards = lines
+                      .filter(line => line.trim().startsWith('■') || line.trim().startsWith('•'))
+                      .map(line => line.replace(/■|•/g, '').trim())
+                      .filter(Boolean);
                   }
 
                   return (
                     <div key={`leader-${rIdx}`} className="bg-white p-2.5 shadow-sm border border-zinc-200 rounded-sm">
                       <div className="font-bold mb-1 uppercase text-zinc-900 text-[11px]">Leader</div>
                       <div className="text-zinc-800 mb-2 font-medium leading-tight">This model can be attached to the following units:</div>
-                      
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-zinc-700 text-[13px] leading-snug">
                         {displayBodyguards.map((bg, idx) => (
                           <div key={idx} className="flex items-start gap-1.5">
@@ -518,10 +551,10 @@ export default function Datasheet({
                   <div className="bg-white p-2.5 shadow-sm border border-zinc-200 rounded-sm">
                     <div className="font-bold mb-1 uppercase text-zinc-900 text-[11px]">LED BY</div>
                     <div className="text-zinc-800 mb-2 font-medium leading-tight">This unit can be led by the following units:</div>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-zinc-700 text-[13px] leading-snug">
                       {actualLeaders.map((leader, idx) => {
-                        const text = leader.replace(/■|•/g, '').trim(); 
+                        const text = leader.replace(/■|•/g, '').trim();
                         return (
                           <div key={idx} className="flex items-start gap-1.5">
                             <span className="text-zinc-400 text-[10px] mt-[3px]">■</span>
@@ -533,9 +566,12 @@ export default function Datasheet({
                   </div>
                 ) : (
                   unit.abilities?.["LedBy"]?.map((rule, rIdx) => {
-                    let desc = rule.description.trim();
-                    const match = desc.match(/can be attached to (?:an? )?(.+?), it can be attached/i);
                     
+                    // 🚨 แก้ไข: ตรงนี้กลับมาใช้ rule.description ของตัวมันเอง!
+                    let desc = rule.description.trim();
+                    
+                    const match = desc.match(/can be attached to (?:an? )?(.+?), it can be attached/i);
+
                     if (match) {
                       const targetUnit = match[1].replace(/ unit$/i, '').trim();
                       return (
@@ -549,7 +585,7 @@ export default function Datasheet({
                         </div>
                       );
                     }
-                    
+
                     const fallbackItems = desc.replace(/Attached Unit\n?/gi, '').split(/(?:<br\s*\/?>|\n)+/).filter(i => i.trim() !== '');
 
                     return (
@@ -558,7 +594,7 @@ export default function Datasheet({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-zinc-700 text-[13px] leading-snug mt-1.5">
                           {fallbackItems.map((item, idx) => {
                             const text = item.replace(/■|•/g, '').trim();
-                            if(!text) return null;
+                            if (!text) return null;
                             return (
                               <div key={idx} className="flex items-start gap-1.5">
                                 <span className="text-zinc-400 text-[10px] mt-[3px]">■</span>
@@ -580,11 +616,12 @@ export default function Datasheet({
           {/* ======================================= */}
           {hasTransport ? (
             <>
-              <div className="px-3 py-1.5 text-white text-[13px] tracking-wide font-bold uppercase shadow-sm mt-3" style={{ backgroundColor: primaryColor }}>
+              <div className="px-3 py-1.5 text-white text-[13px] tracking-wide font-bold uppercase shadow-sm mt-1" style={{ backgroundColor: primaryColor }}>
                 Transport
               </div>
               <div className="p-2.5 space-y-2.5 text-[13px] sm:text-[14px]">
                 {transportAbilities.map((rule, rIdx) => {
+                  // 🚨 แก้ไข: ตรงนี้กลับมาใช้ rule.description ของตัวมันเอง!
                   const lines = rule.description.split(/(?:<br\s*\/?>|\n)+/).filter(i => i.trim() !== '');
                   return (
                     <div key={`transport-${rIdx}`} className="bg-white p-2.5 shadow-sm border border-zinc-200 rounded-sm">
