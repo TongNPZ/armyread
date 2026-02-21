@@ -76,11 +76,8 @@ export function buildArmyListUnitFromModel(
                     : "";
 
                 const isEnhancement =
-                    // เช็คคำว่า enhancement ใน group (รองรับ Enhancements::...)
                     groupStr.includes("enhancement") ||
-                    // เช็ค typeName
                     typeNameStr === "enhancement" ||
-                    // เช็ค categories
                     child.categories?.some(c => c.name?.toLowerCase().includes("enhancement"));
                 // --- Structural Filter End ---
 
@@ -108,7 +105,7 @@ export function buildArmyListUnitFromModel(
         isWarlord: unitIsWarlord,
         category: getPrimaryCategoryFromNode(modelNode),
         stats,
-        // ✅ 2. แปลง Object abilities โดยลูปผ่านแต่ละ Category เพื่อดึง Description จาก Wahapedia
+        // ✅ 2. แปลง Object abilities โดยลูปผ่านแต่ละ Category พร้อมระบบดึงจุดกระสุนให้เข้าที่
         abilities: Object.fromEntries(
             Object.entries(abilities).map(([category, rules]) => [
                 category,
@@ -116,12 +113,41 @@ export function buildArmyListUnitFromModel(
                     const abilityName = rule.name ?? "Unknown Ability";
                     const originalDesc = rule.description ?? "";
 
-                    // 🌟 ทริค: ถ้าหมวดหมู่คือ "Leader" (กล่องล่างสุด) ให้ใช้รายชื่อ Unit ดั้งเดิม
-                    // แต่ถ้าเป็นกล่องอื่น (เช่น Core, Faction) ให้ดึงกฎ Leader จาก Wahapedia
-                    const isLeaderCategory = category === "Leader";
-                    const finalDesc = isLeaderCategory 
-                        ? originalDesc 
-                        : (getAbilityDescription(abilityName) || originalDesc);
+                    let finalDesc = originalDesc;
+
+                    // 🛑 กรองขยะและจัด Format เฉพาะในหมวด Leader
+                    if (category === "Leader" || abilityName.toLowerCase() === "leader") {
+                        finalDesc = originalDesc
+                            .split('\n')
+                            .map((line: string) => line.trim())
+                            .filter((line: string) => {
+                                if (!line) return false;
+                                
+                                // 🎯 ถ้าขึ้นต้นด้วย "-" และข้างหลังเป็นตัวพิมพ์ใหญ่หมด (เช่น - GENESTEALERS) ให้เตะทิ้ง!
+                                if (line.startsWith('-')) {
+                                    const textOnly = line.replace(/[^a-zA-Z]/g, '');
+                                    if (textOnly.length > 0 && textOnly === textOnly.toUpperCase()) {
+                                        return false;
+                                    }
+                                }
+                                return true;
+                            })
+                            // 🎯 ดึงสัญลักษณ์ ■ หรือ • ที่โดนปัดตกบรรทัดกลับไปรวมกับชื่อยูนิต
+                            .reduce((acc: string[], line: string) => {
+                                if (line === '■' || line === '•') {
+                                    acc.push(line);
+                                } else if (acc.length > 0 && (acc[acc.length - 1] === '■' || acc[acc.length - 1] === '•')) {
+                                    acc[acc.length - 1] = `${acc[acc.length - 1]} ${line}`;
+                                } else {
+                                    acc.push(line);
+                                }
+                                return acc;
+                            }, [])
+                            .join('<br/>'); // จัดให้อ่านง่ายๆ โดยเปลี่ยนบรรทัดใหม่เป็น tag html
+                    } else {
+                        // ถ้าเป็นหมวดอื่นให้ดึง Wahapedia ปกติ
+                        finalDesc = getAbilityDescription(abilityName) || originalDesc;
+                    }
 
                     return {
                         ...rule,

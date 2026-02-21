@@ -81,7 +81,6 @@ export function buildArmyListUnit(
                     child.categories?.some(c => c.name?.toLowerCase().includes("enhancement"));
 
                 if (isEnhancement) {
-                    // ✅ ค้นหา Description ของ Enhancement และเก็บลงไปในโมเดลด้วย
                     const enhancementDesc = getAbilityDescription(name);
                     model.enhancements.push({ 
                         name, 
@@ -117,9 +116,40 @@ export function buildArmyListUnit(
                     const ruleName = rule.name ?? "Unknown Rule";
                     const originalDesc = rule.description ?? "";
 
-                    const finalDesc = category === "Leader"
-                        ? originalDesc
-                        : (getAbilityDescription(ruleName) || originalDesc);
+                    let finalDesc = originalDesc;
+
+                    // 🛑 กรองขยะเฉพาะในหมวด Leader
+                    if (category === "Leader" || ruleName.toLowerCase() === "leader") {
+                        finalDesc = originalDesc
+                            .split('\n')
+                            .map(line => line.trim())
+                            .filter(line => {
+                                if (!line) return false;
+                                
+                                // 🎯 ถ้าขึ้นต้นด้วย "-" และข้างหลังเป็นตัวพิมพ์ใหญ่หมด (เช่น - GENESTEALERS) ให้เตะทิ้ง!
+                                if (line.startsWith('-')) {
+                                    const textOnly = line.replace(/[^a-zA-Z]/g, '');
+                                    if (textOnly.length > 0 && textOnly === textOnly.toUpperCase()) {
+                                        return false;
+                                    }
+                                }
+                                return true;
+                            })
+                            // 🎯 ดึงสัญลักษณ์ ■ ที่อาจโดนปัดตกบรรทัดกลับไปรวมกับชื่อยูนิต
+                            .reduce((acc: string[], line) => {
+                                if (line === '■' || line === '•') {
+                                    acc.push(line);
+                                } else if (acc.length > 0 && (acc[acc.length - 1] === '■' || acc[acc.length - 1] === '•')) {
+                                    acc[acc.length - 1] = `${acc[acc.length - 1]} ${line}`;
+                                } else {
+                                    acc.push(line);
+                                }
+                                return acc;
+                            }, [])
+                            .join('<br/>'); // จัดให้อ่านง่ายๆ โดยเปลี่ยนบรรทัดใหม่เป็น tag html
+                    } else {
+                        finalDesc = getAbilityDescription(ruleName) || originalDesc;
+                    }
 
                     return {
                         ...rule,
