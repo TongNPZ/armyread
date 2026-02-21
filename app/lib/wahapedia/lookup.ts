@@ -8,6 +8,9 @@ import factionsJson from '@/app/data/wahapedia/Factions.json';
 import datasheetsJson from '@/app/data/wahapedia/Datasheets.json';
 import datasheetsLeaderJson from '@/app/data/wahapedia/Datasheets_leader.json';
 import datasheetsKeywordsJson from '@/app/data/wahapedia/Datasheets_keywords.json';
+// ✅ Import Enhancements & Detachments
+import enhancementsJson from '@/app/data/wahapedia/Enhancements.json';
+import detachmentsJson from '@/app/data/wahapedia/Detachments.json';
 
 // --- Type Definitions ---
 export interface WahapediaStratagem {
@@ -38,9 +41,11 @@ const datasheetsData = datasheetsJson as any[];
 const leaderData = datasheetsLeaderJson as any[];
 const factionsData = factionsJson as any[];
 const keywordsData = datasheetsKeywordsJson as any[];
+const enhancementsData = enhancementsJson as any[]; 
+const detachmentsData = detachmentsJson as any[]; 
 
 // ==========================================
-// 📜 คลังกติกากลางสำหรับ "อาวุธ" (เพราะ Wahapedia ไม่ได้ใส่ Weapon Rules ไว้ใน Abilities.json)
+// 📜 คลังกติกากลางสำหรับ "อาวุธ"
 // ==========================================
 const CORE_WEAPON_RULES: Record<string, string> = {
     "rapid fire": `<em>Rapid fire weapons are capable of long-ranged precision shots or controlled bursts at nearby targets.</em><br/><br/>Weapons with <strong>[RAPID FIRE X]</strong> in their profile are known as Rapid Fire weapons. Each time such a weapon targets a unit within half that weapon’s range, the Attacks characteristic of that weapon is increased by the amount denoted by ‘x’.<br/><br/><strong>Example:</strong> A model targets a unit that is within half range of a weapon with an Attacks characteristic of 1 and the <strong>[RAPID FIRE 1]</strong> ability. That weapon therefore makes two attacks at the target, and you make two Hit rolls.<br/><br/><div style="padding-left: 10px;">&bull; <strong>[RAPID FIRE X]:</strong> Increase the Attacks by ‘x’ when targeting units within half range.</div>`,
@@ -61,22 +66,87 @@ const CORE_WEAPON_RULES: Record<string, string> = {
 };
 
 // ==========================================
+// 🌟 6. ฟังก์ชันค้นหากฎอัตโนมัติจากฐานข้อมูล JSON 100% (Fuzzy Search)
+// ไม่ใช้ Hardcode แล้ว ค้นหาจาก Wahapedia ตรงๆ เลย
+// ==========================================
+export const findWahapediaRuleByText = (text: string): { name: string, description: string } | null => {
+    if (!text || text.length < 10) return null;
+
+    // ล้างข้อความแบบโหดสุดๆ: ตัดทุกอย่างที่ไม่ใช่ตัวอักษรและตัวเลข (ใช้หา Substring แม่นยำ 100%)
+    const cleanInputExact = text.replace(/<[^>]*>?/gm, ' ').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    
+    // แบบแยกคำ: เอาไว้ใช้เช็คความคล้าย (Fuzzy matching) ตัดคำที่สั้นกว่า 3 ตัวอักษรทิ้ง
+    const inputWords = text.replace(/<[^>]*>?/gm, ' ').replace(/[^a-zA-Z0-9\s]/g, '').toLowerCase().split(/\s+/).filter(w => w.length > 3);
+
+    const allSources = [detachmentAbilitiesData, abilitiesData, datasheetsAbilitiesData];
+
+    let bestMatch = null;
+    let highestScore = 0;
+
+    for (const source of allSources) {
+        if (!source) continue;
+
+        for (const a of source) {
+            if (!a.description) continue;
+
+            const cleanTargetExact = a.description.replace(/<[^>]*>?/gm, ' ').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+            // 🎯 วิธีที่ 1: ตรวจสอบแบบ Substring (สแกนข้อความซ้อนทับกัน)
+            // ถ้า New Recruit ตัดข้อความมาแค่ครึ่งเดียว แต่มันตรงกับ Wahapedia เป๊ะๆ จะโดนจับคู่ทันที
+            if (cleanTargetExact.includes(cleanInputExact) || cleanInputExact.includes(cleanTargetExact)) {
+                let desc = a.description;
+                if ((a as any).legend) {
+                    desc = `<div style="margin-bottom: 8px; font-style: italic; color: #888;">${(a as any).legend}</div>${desc}`;
+                }
+                return { name: a.name, description: desc };
+            }
+
+            // 🎯 วิธีที่ 2: ตรวจสอบความคล้ายคลึงของคำศัพท์ (Fuzzy Word Match)
+            // แก้ปัญหากรณี New Recruit พิมพ์เว้นวรรคผิด หรือตกหล่นบางตัว
+            if (inputWords.length >= 3) {
+                const targetWords = a.description.replace(/<[^>]*>?/gm, ' ').replace(/[^a-zA-Z0-9\s]/g, '').toLowerCase().split(/\s+/).filter(w => w.length > 3);
+                
+                let matchCount = 0;
+                for (const w of inputWords) {
+                    if (targetWords.includes(w)) matchCount++;
+                }
+
+                const score = matchCount / inputWords.length;
+                
+                // ถ้าระบุตรงกันเกิน 60% ของคำทั้งหมด ถือว่าเป็นกฎเดียวกัน
+                if (score > highestScore && score >= 0.6) {
+                    highestScore = score;
+                    let desc = a.description;
+                    if ((a as any).legend) {
+                        desc = `<div style="margin-bottom: 8px; font-style: italic; color: #888;">${(a as any).legend}</div>${desc}`;
+                    }
+                    bestMatch = { name: a.name, description: desc };
+                }
+            }
+        }
+    }
+
+    // ส่งคืนผลลัพธ์ที่ใกล้เคียงที่สุด (ถ้าหาเจอ)
+    return bestMatch;
+};
+
+// ==========================================
 // 🛡️ Helper 1: ล้างชื่อยูนิตให้สะอาดก่อนสืบค้น
 // ==========================================
-const cleanDatasheetName = (name: string): string => {
+export const cleanDatasheetName = (name: string): string => {
     if (!name) return "";
     let n = name.toLowerCase().trim();
-    n = n.replace(/\s+-\s+warlord/gi, ''); 
-    n = n.replace(/\s*\[.*?\]/g, ''); 
-    n = n.replace(/\s*\(.*?\)/g, ''); 
-    n = n.split(' - ')[0]; 
+    n = n.replace(/\s+-\s+warlord/gi, '');
+    n = n.replace(/\s*\[.*?\]/g, '');
+    n = n.replace(/\s*\(.*?\)/g, '');
+    n = n.split(' - ')[0];
     return n.trim();
 };
 
 // ==========================================
 // 🛑 Helper 2: ฟังก์ชันกรองยูนิตขยะ
 // ==========================================
-const isValidUnit = (sheet: any): boolean => {
+export const isValidUnit = (sheet: any): boolean => {
     if (!sheet || !sheet.name) return false;
     const linkStr = (sheet.link || "").toLowerCase();
     const lowerName = sheet.name.toLowerCase();
@@ -169,30 +239,27 @@ export const getApplicableStratagems = (
 };
 
 // ==========================================
-// 🔍 2. ฟังก์ชันค้นหา Descriptions (ทำงานร่วมกับ Weapon Rules อัตโนมัติ)
+// 🔍 2. ฟังก์ชันค้นหา Descriptions
 // ==========================================
 export const getAbilityDescription = (name: string, bypassBlocklist = false): string | null => {
     if (!name) return null;
     let normalizedName = name.toLowerCase().trim();
 
-    // 🛑 บล็อกคำสงวน ถ้าไม่ได้เปิดโหมดทะลวง
     if (!bypassBlocklist) {
         if (
-            normalizedName === "attached unit" || 
-            normalizedName === "leader" || 
-            normalizedName === "transport" 
+            normalizedName === "attached unit" ||
+            normalizedName === "leader" ||
+            normalizedName === "transport"
         ) {
-            return null; 
+            return null;
         }
     }
 
-    // 🎯 ถอดวงเล็บ [ ] ( )
     let noBracketName = normalizedName.replace(/\[|\]|\(|\)/g, '').trim();
+    noBracketName = noBracketName.replace(/aura\s*\d+"/gi, 'aura').trim();
 
-    // 🎯 ตัดตัวเลข, D3, D6, และเครื่องหมาย +, - ออกจากท้ายชื่อ 
     let cleanName = noBracketName.replace(/\s*[-]?\s*([Dd]?\d+)\+?$/, '').trim();
 
-    // 🌟 ดึง Core Weapon Rules มาใช้ทันที (เพราะไม่มีใน Wahapedia JSON)
     if (CORE_WEAPON_RULES[cleanName]) {
         return CORE_WEAPON_RULES[cleanName];
     }
@@ -200,9 +267,13 @@ export const getAbilityDescription = (name: string, bypassBlocklist = false): st
         return CORE_WEAPON_RULES['anti'];
     }
 
+    const foundEnhancement = enhancementsData.find(e => e.name.toLowerCase().trim() === normalizedName || e.name.toLowerCase().trim() === cleanName);
+    if (foundEnhancement && foundEnhancement.description) {
+        return foundEnhancement.description;
+    }
+
     const allSources = [datasheetsAbilitiesData, abilitiesData, detachmentAbilitiesData];
 
-    // ค้นหาใน Wahapedia JSON
     for (const source of allSources) {
         let found = source.find(a => a.name.toLowerCase().trim() === normalizedName);
         if (!found) found = source.find(a => a.name.toLowerCase().trim() === noBracketName);
@@ -214,12 +285,39 @@ export const getAbilityDescription = (name: string, bypassBlocklist = false): st
             return found.description;
         }
     }
-    
+
     return null;
 };
 
 // ==========================================
-// 🔍 3. หา Leader (LED BY)
+// 🌟 3. ฟังก์ชันดึงกฎทั้งหมดของ Detachment
+// ==========================================
+export const getWahapediaDetachmentRules = (detachmentName: string): { name: string, description: string }[] => {
+    if (!detachmentName) return [];
+
+    let cleanName = detachmentName.toLowerCase().replace(/\(detachment.*?\)/gi, '').trim();
+
+    const detachment = detachmentsData.find(d => d.name.toLowerCase().trim() === cleanName);
+    if (!detachment) return [];
+
+    const rules = (detachmentAbilitiesData as any[]).filter(a => a.detachment_id === detachment.id);
+
+    return rules.map(r => {
+        let desc = r.description || "";
+
+        if (r.legend) {
+            desc = `<div style="margin-bottom: 8px; font-style: italic; color: #888;">${r.legend}</div>${desc}`;
+        }
+
+        return {
+            name: r.name,
+            description: desc
+        };
+    });
+};
+
+// ==========================================
+// 🔍 4. หา Leader (LED BY)
 // ==========================================
 export const findGlobalLeaders = (
     targetUnitName: string,
@@ -322,7 +420,7 @@ export const findGlobalLeaders = (
 };
 
 // ==========================================
-// 🔍 4. หา Bodyguards 
+// 🔍 5. หา Bodyguards 
 // ==========================================
 export const findGlobalBodyguards = (
     leaderName: string,
@@ -398,4 +496,10 @@ export const findGlobalBodyguards = (
     }
 
     return Array.from(foundBodyguards).sort();
+};
+
+// ✅ ฟังก์ชันช่วยลบเครื่องหมาย ^^ และล้างเนื้อหา Wahapedia
+export const formatWahapediaText = (text: string) => {
+    if (!text) return "";
+    return text.replace(/\^\^/g, '').trim();
 };

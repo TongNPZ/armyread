@@ -20,6 +20,12 @@ export default function ArmyHeader({ meta, units, armyRules, detachment, viewMod
     const warlordUnit = units.find(u => u.isWarlord)
     const [showRules, setShowRules] = useState(true)
 
+    // ✅ Helper ฟังก์ชันสำหรับตัดเนื้อเรื่อง (Lore) ออกเฉพาะในหน้า Preview 
+    const getPreviewHTML = (html: string) => {
+        if (!html) return "";
+        return html.replace(/<div[^>]*font-style:\s*italic[^>]*>[\s\S]*?<\/div>/i, '').trim();
+    };
+
     return (
         <section className="border border-zinc-700 bg-zinc-900/80 pt-3 px-4 space-y-3 rounded-t-lg shadow-lg">
 
@@ -34,14 +40,13 @@ export default function ArmyHeader({ meta, units, armyRules, detachment, viewMod
                     </div>
                 </div>
 
-                {/* ✅ ปุ่ม Icon ถังขยะ - ปรับให้เด่นขึ้น */}
+                {/* ✅ ปุ่ม Icon ถังขยะ */}
                 <button
                     onClick={() => {
                         if (window.confirm("Are you sure you want to clear all data?")) {
                             onClear()
                         }
                     }}
-                    // ปรับ Style ให้เป็นปุ่มโทนแดง มีพื้นหลังและขอบ
                     className="p-2 text-red-500/70 bg-red-950/20 border border-red-900/30 rounded-md hover:bg-red-900/40 hover:text-red-400 hover:border-red-800 transition-all duration-200 shadow-sm"
                     title="Clear All Data"
                 >
@@ -95,51 +100,51 @@ export default function ArmyHeader({ meta, units, armyRules, detachment, viewMod
                             transition={{ duration: 0.25, ease: "easeInOut" }}
                             className="overflow-hidden"
                         >
-                            <div className="space-y-3 pb-3 pt-1">
+                            <div className="space-y-4 pb-3 pt-1">
                                 {/* Army Rules */}
-                                {armyRules.map(rule => (
-                                    <div key={rule.id}>
+                                {armyRules.length > 0 && (
+                                    <div className="space-y-2">
                                         <div className="flex items-center gap-2 mb-1">
                                             <div className="w-0.5 h-3 bg-red-600 rounded-full"></div>
-                                            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wide">Army Rule</h3>
+                                            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wide">Army Rules</h3>
                                         </div>
-
-                                        <div className="bg-zinc-950/60 p-2.5 rounded border border-zinc-700/50 flex justify-between items-start gap-3 hover:border-zinc-600 transition">
-                                            <div className="min-w-0 space-y-0.5">
-                                                <div className="font-bold text-sm text-zinc-200">{rule.name}</div>
-                                                {/* ✅ เปลี่ยนเป็น dangerouslySetInnerHTML สำหรับ Army Rule */}
-                                                <div
-                                                    className="wahapedia-content dark-theme text-xs text-zinc-400 line-clamp-2 leading-snug"
-                                                    dangerouslySetInnerHTML={{ __html: rule.description }}
-                                                />
-                                            </div>
-                                            <button
-                                                onClick={() => setOpenRule({ type: "army", id: rule.id })}
-                                                className="text-[10px] px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded transition shrink-0"
-                                            >
-                                                Read
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {/* Detachment */}
-                                {detachment && (
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <div className="w-0.5 h-3 bg-purple-600 rounded-full"></div>
-                                            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wide">Detachment</h3>
-                                        </div>
-                                        <div className="bg-zinc-950/60 p-2.5 rounded border border-zinc-700/50 flex justify-between items-start gap-3 hover:border-zinc-600 transition">
-                                            <div className="min-w-0 space-y-0.5">
-                                                <div className="font-bold text-sm text-zinc-200">{detachment.name}</div>
-                                                {detachment.rules?.[0] && (
-                                                    /* ✅ เปลี่ยนเป็น dangerouslySetInnerHTML สำหรับ Detachment */
+                                        {armyRules.map(rule => (
+                                            <div key={rule.id} className="bg-zinc-950/60 p-2.5 rounded border border-zinc-700/50 flex justify-between items-start gap-3 hover:border-zinc-600 transition">
+                                                <div className="min-w-0 space-y-0.5">
+                                                    <div className="font-bold text-sm text-zinc-200">{rule.name}</div>
                                                     <div
                                                         className="wahapedia-content dark-theme text-xs text-zinc-400 line-clamp-2 leading-snug"
-                                                        dangerouslySetInnerHTML={{ __html: detachment.rules[0].description }}
+                                                        dangerouslySetInnerHTML={{ __html: getPreviewHTML(rule.description) }}
                                                     />
-                                                )}
+                                                </div>
+                                                <button
+                                                    onClick={() => setOpenRule({ type: "army", id: rule.id })}
+                                                    className="text-[10px] px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded transition shrink-0"
+                                                >
+                                                    Read
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Detachment Rules (✅ โชว์แค่กฎข้อแรกข้อเดียวข้างนอก) */}
+                                {detachment && detachment.rules && detachment.rules.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="w-0.5 h-3 bg-purple-600 rounded-full"></div>
+                                            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wide">
+                                                Detachment: {detachment.name}
+                                            </h3>
+                                        </div>
+                                        
+                                        <div className="bg-zinc-950/60 p-2.5 rounded border border-zinc-700/50 flex justify-between items-start gap-3 hover:border-zinc-600 transition">
+                                            <div className="min-w-0 space-y-0.5">
+                                                <div className="font-bold text-sm text-zinc-200">{detachment.rules[0].name}</div>
+                                                <div
+                                                    className="wahapedia-content dark-theme text-xs text-zinc-400 line-clamp-2 leading-snug"
+                                                    dangerouslySetInnerHTML={{ __html: getPreviewHTML(detachment.rules[0].description) }}
+                                                />
                                             </div>
                                             <button
                                                 onClick={() => setOpenRule({ type: "detachment", id: detachment.id })}

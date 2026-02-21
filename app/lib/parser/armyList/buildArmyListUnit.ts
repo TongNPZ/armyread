@@ -5,7 +5,6 @@ import type { ArmyListUnit, ArmyListModel } from "./armyListTypes"
 import { getPoints } from "../getPoints"
 import { getPrimaryCategoryFromNode } from "./getPrimaryCategory"
 import { getUnitStats, getWeaponStats, getAbilitiesAndKeywords } from "./armyListHelpers"
-// ✅ Import ฟังก์ชันค้นหาจาก Wahapedia
 import { getAbilityDescription } from "../../wahapedia/lookup"
 
 export function buildArmyListUnit(
@@ -19,7 +18,6 @@ export function buildArmyListUnit(
 
     let unitIsWarlord = false;
 
-    // Helper: เช็คว่าเป็น Warlord หรือไม่
     const checkIsWarlord = (node: SelectionNode) => {
         if (node.name?.toLowerCase().includes("warlord")) return true;
         if (node.categories?.some(c => c.name === "Warlord")) return true;
@@ -71,30 +69,25 @@ export function buildArmyListUnit(
             // 2. Upgrades (Structural Check Logic)
             if (child.type === "upgrade") {
                 const points = getPoints(child)
-
-                // --- Structural Filter Start ---
                 const childAny = child as any;
-
-                // ดึงค่า group มาทำเป็นตัวเล็กเพื่อเช็ค (เช่น "Enhancements::Wrath...")
                 const groupStr = (childAny.group && typeof childAny.group === 'string')
-                    ? childAny.group.toLowerCase()
-                    : "";
-
+                    ? childAny.group.toLowerCase() : "";
                 const typeNameStr = (childAny.typeName && typeof childAny.typeName === 'string')
-                    ? childAny.typeName.toLowerCase()
-                    : "";
+                    ? childAny.typeName.toLowerCase() : "";
 
                 const isEnhancement =
-                    // 1. เช็คว่าใน Group มีคำว่า enhancement หรือไม่ (สำคัญที่สุดสำหรับ New Recruit)
                     groupStr.includes("enhancement") ||
-                    // 2. เช็ค TypeName
                     typeNameStr === "enhancement" ||
-                    // 3. เช็ค Categories ของตัว Upgrade นั้น
                     child.categories?.some(c => c.name?.toLowerCase().includes("enhancement"));
-                // --- Structural Filter End ---
 
                 if (isEnhancement) {
-                    model.enhancements.push({ name, points })
+                    // ✅ ค้นหา Description ของ Enhancement และเก็บลงไปในโมเดลด้วย
+                    const enhancementDesc = getAbilityDescription(name);
+                    model.enhancements.push({ 
+                        name, 
+                        points, 
+                        description: enhancementDesc || undefined 
+                    })
                 } else {
                     if (!checkIsWarlord(child)) {
                         const existingWargear = model.wargear.find(w => w.name === name)
@@ -117,7 +110,6 @@ export function buildArmyListUnit(
         isWarlord: unitIsWarlord,
         category: getPrimaryCategoryFromNode(unitNode),
         stats,
-        // ✅ แปลง Object abilities โดยลูปผ่านแต่ละ Category ("Core", "Faction", ฯลฯ)
         abilities: Object.fromEntries(
             Object.entries(abilities).map(([category, rules]) => [
                 category,
@@ -125,8 +117,6 @@ export function buildArmyListUnit(
                     const ruleName = rule.name ?? "Unknown Rule";
                     const originalDesc = rule.description ?? "";
 
-                    // 🌟 ถ้าเป็นหมวดหมู่ "Leader" ด้านล่างสุด ให้คงรายชื่อ Unit เดิมไว้
-                    // แต่ถ้าเป็นกล่องอื่น (เช่น Core) ให้ดึงกฎความสามารถจาก Wahapedia
                     const finalDesc = category === "Leader"
                         ? originalDesc
                         : (getAbilityDescription(ruleName) || originalDesc);

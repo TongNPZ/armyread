@@ -12,20 +12,19 @@ export type WeaponProfile = {
 export type Stratagem = {
     id: string;
     name: string;
-    type: string;        // เช่น "Battle Tactic", "Epic Deed"
-    cp_cost: string;     // เช่น "1CP", "2CP"
-    turn: string;        // เช่น "Either", "Your", "Opponent" (เอาไว้ทำขอบการ์ด)
-    phase: string;       // เช่น "Any", "Command", "Shooting" (เอาไว้โชว์ icon เพชร)
-    description: string; // คำอธิบาย HTML
-    legend?: string;     // ข้อความสั้นๆ ใต้ชื่อ (ถ้ามี)
+    type: string;        
+    cp_cost: string;     
+    turn: string;        
+    phase: string;       
+    description: string; 
+    legend?: string;     
 }
 
-// อัปเดต ParsedRoster หรือ Detachment ให้รับ Stratagem
 export type Detachment = {
     id: string;
     name: string;
-    rules: { id: string; name: string; description: string }[]; // กฎ Detachment เดิม
-    stratagems: Stratagem[]; // ✅ เพิ่มอันนี้เข้าไป
+    rules: { id: string; name: string; description: string }[]; 
+    stratagems: Stratagem[]; 
 }
 
 export type ArmyListWeapon = {
@@ -38,9 +37,9 @@ export type ArmyListModel = {
     name: string
     count: number
     weapons: ArmyListWeapon[]
-    // ✅ แยกเก็บชัดเจน
     wargear: { name: string; count: number }[]
-    enhancements: { name: string; points?: number }[]
+    // ✅ เพิ่ม description ให้ enhancements
+    enhancements: { name: string; points?: number; description?: string }[]
 }
 
 export type StatItem = {

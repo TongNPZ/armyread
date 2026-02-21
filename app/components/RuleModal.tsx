@@ -22,15 +22,26 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
                 setOpenRule(null)
             }
         }
-        
+
         // ถ้า Popup เปิดอยู่ ให้เริ่มดักจับปุ่มกด
         if (openRule) {
             window.addEventListener("keydown", handleKeyDown)
         }
-        
+
         // คืนค่า (Cleanup) เมื่อ Component ถูกปิด
         return () => window.removeEventListener("keydown", handleKeyDown)
     }, [openRule, setOpenRule])
+
+    // 🛑 Helper function สำหรับเช็คว่าเป็นชื่อขยะที่ควรซ่อนไหม 
+    const isTrashRuleName = (ruleName: string, detachmentName: string) => {
+        if (!ruleName) return true;
+        const lowerName = ruleName.toLowerCase().trim();
+        const lowerDetachment = (detachmentName || "").toLowerCase().trim();
+
+        return lowerName === "detachment rule" ||
+            lowerName === "detachment rules" ||
+            lowerName === lowerDetachment;
+    };
 
     return (
         <AnimatePresence>
@@ -66,6 +77,8 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
 
                         {/* 2. Content (Scrollable) */}
                         <div className={`p-6 overflow-y-auto ${scrollbarStyle}`}>
+
+                            {/* --- ARMY RULE --- */}
                             {openRule.type === "army" &&
                                 armyRules
                                     .filter(r => r.id === openRule.id)
@@ -76,7 +89,7 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
                                                     {rule.name}
                                                 </h1>
                                                 {/* ✅ ใส่ dark-theme ใน Army Rule หลัก */}
-                                                <div 
+                                                <div
                                                     className="wahapedia-content dark-theme text-base text-zinc-300 leading-relaxed font-sans"
                                                     dangerouslySetInnerHTML={{ __html: rule.description }}
                                                 />
@@ -94,7 +107,7 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
                                                                             {r.name}
                                                                         </div>
                                                                         {/* ✅ ใส่ dark-theme ใน กฎย่อย (References) */}
-                                                                        <div 
+                                                                        <div
                                                                             className="wahapedia-content dark-theme text-sm text-zinc-400 leading-relaxed"
                                                                             dangerouslySetInnerHTML={{ __html: r.description }}
                                                                         />
@@ -109,21 +122,43 @@ export default function RuleModal({ openRule, setOpenRule, armyRules, detachment
                                     ))
                             }
 
-                            {openRule.type === "detachment" && detachment?.rules?.map(rule => (
-                                <div key={rule.id} className="space-y-6">
-                                    <h1 className="text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-2">
-                                        {detachment.name}
-                                    </h1>
-                                    <div className="text-lg font-medium text-zinc-400 border-b border-zinc-800 pb-4 mb-4">
-                                        Detachment Rule
+                            {/* --- DETACHMENT RULE --- */}
+                            {openRule.type === "detachment" && detachment && (
+                                <div className="space-y-6">
+                                    {/* หัวข้อใหญ่แสดงแค่รอบเดียว */}
+                                    <div>
+                                        <h1 className="text-3xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-2">
+                                            {detachment.name}
+                                        </h1>
+                                        <div className="text-lg font-medium text-zinc-400 border-b border-zinc-800 pb-4 mb-4">
+                                            Detachment Rule
+                                        </div>
                                     </div>
-                                    {/* ✅ ใส่ dark-theme ใน Detachment Rule */}
-                                    <div 
-                                        className="wahapedia-content dark-theme text-base text-zinc-300 leading-relaxed font-sans"
-                                        dangerouslySetInnerHTML={{ __html: rule.description }}
-                                    />
+
+                                    {/* วนลูปโชว์กฎย่อย (กรองชื่อขยะออก) */}
+                                    <div className="space-y-8">
+                                        {detachment.rules?.map((rule, idx) => {
+                                            const isTrash = isTrashRuleName(rule.name, detachment.name || "");
+
+                                            return (
+                                                <div key={rule.id || idx} className="space-y-2">
+                                                    {/* โชว์ชื่อกฎเฉพาะเมื่อไม่ใช่ขยะ (เช่นโชว์ Questing Tendrils) */}
+                                                    {!isTrash && (
+                                                        <h3 className="font-bold text-xl text-zinc-200">
+                                                            {rule.name}
+                                                        </h3>
+                                                    )}
+
+                                                    <div
+                                                        className="wahapedia-content dark-theme text-base text-zinc-300 leading-relaxed font-sans"
+                                                        dangerouslySetInnerHTML={{ __html: rule.description }}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            ))}
+                            )}
                         </div>
 
                         {/* 3. Footer (Optional Close) */}
